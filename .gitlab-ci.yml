@@ -3,35 +3,83 @@ stages:
   - deploy
 
 variables:
-  IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
   DOCKER_API_VERSION: "1.44"  
+  image: docker:26.1.4 
 
-image: docker:26.1.4 
 
-build_job:
+.build_template:
   stage: build
   tags:
-   - linux
-  rules:
-   - if: $CI_COMMIT_BRANCH == "main"
-     changes:
-       - python/**/*
+    - linux
   before_script:
-   - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
   script:
-   - docker build -t $IMAGE_TAG ./python/
-   - docker push $IMAGE_TAG
+    - docker build -t $CI_REGISTRY_IMAGE:${SERVICE_NAME}-latest ./${SERVICE_NAME}/
+    - docker push $CI_REGISTRY_IMAGE:${SERVICE_NAME}-latest
 
-deploy_job:
+.deploy_template:
   stage: deploy
   image: curlimages/curl:latest
   tags:
-   - linux
-  rules:
-   - if: $CI_COMMIT_BRANCH == "main"
-     changes:
-       - python/**/*
+    - linux
   script:
-   - |
-     curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
-      -X POST http://$PRODUCTION_IP:8080/v1/update
+    - |
+      curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
+        -X POST http://$PRODUCTION_IP:8080/v1/update
+
+
+build_python:
+  extends: .build_template
+  variables:
+    SERVICE_NAME: "python"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - python/**/*
+
+deploy_python:
+  extends: .deploy_template
+  variables:
+    SERVICE_NAME: "python"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - python/**/*
+
+
+build_go:
+  extends: .build_template
+  variables:
+    SERVICE_NAME: "go"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - go/**/*
+
+deploy_go:
+  extends: .deploy_template
+  variables:
+    SERVICE_NAME: "go"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - go/**/*
+
+
+build_nodejs:
+  extends: .build_template
+  variables:
+    SERVICE_NAME: "nodejs"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - nodejs/**/*
+
+deploy_nodejs:
+  extends: .deploy_template
+  variables:
+    SERVICE_NAME: "nodejs"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - nodejs/**/*

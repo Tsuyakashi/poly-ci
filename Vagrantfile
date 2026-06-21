@@ -56,7 +56,7 @@ Vagrant.configure("2") do |config|
                         "WATCHTOWER_TOKEN"  => ENV['WATCHTOWER_TOKEN'],
                         "REGISTRY_USER"     => ENV['REGISTRY_USER'],
                         "REGISTRY_PASSWORD" => ENV['REGISTRY_PASSWORD'], 
-                        "APP_IMAGE"         => ENV['APP_IMAGE']
+                        "BASE_REGISTRY"         => ENV['BASE_REGISTRY']
                     }
                 end
             end
