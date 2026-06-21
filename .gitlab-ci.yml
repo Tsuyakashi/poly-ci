@@ -1,0 +1,27 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
+
+build_job:
+  stage: build
+  tags:
+   - linux
+  before_script:
+   - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+  script:
+   - docker build -t $IMAGE_TAG ./python/
+   - docker push $IMAGE_TAG
+
+deploy_job:
+  stage: deploy
+  tags:
+   - linux
+  script:
+   - |
+     curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
+      -X POST http://$PRODUCTION_IP:8080/v1/update
+  only:
+   - main
