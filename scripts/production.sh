@@ -9,16 +9,34 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get update && \
 echo "$REGISTRY_PASSWORD" | sudo docker login registry.gitlab.com -u "$REGISTRY_USER" --password-stdin
 
 # Pull image from registry
-sudo docker pull "$APP_IMAGE" || echo "Warning: Image is not ready in registry"
+sudo docker pull "$BASE_REGISTRY:python-latest" || echo "Warning: Python image is not ready in registry"
+sudo docker pull "$BASE_REGISTRY:nodejs-latest" || echo "Warning: NodeJS image is not ready in registry"
+sudo docker pull "$BASE_REGISTRY:go-latest" || echo "Warning: Go image is not ready in registry"
 
-#  Run container if image is ready
-if sudo docker image inspect "$APP_IMAGE" >/dev/null 2>&1; then
-    sudo docker rm -f bsuir-app 2>/dev/null || true
+#  Run containers if images are ready
+if sudo docker image inspect "$BASE_REGISTRY:python-latest" >/dev/null 2>&1; then
+    sudo docker rm -f python-app 2>/dev/null || true
     sudo docker run -d \
-    --name bsuir-app \
-    -p 80:80 \
+    --name python-app \
+    -p 8001:80 \
     --restart unless-stopped \
-    "$APP_IMAGE"
+    "$BASE_REGISTRY:python-latest"
+fi
+if sudo docker image inspect "$BASE_REGISTRY:nodejs-latest" >/dev/null 2>&1; then
+    sudo docker rm -f nodejs-app 2>/dev/null || true
+    sudo docker run -d \
+    --name nodejs-app \
+    -p 8002:80 \
+    --restart unless-stopped \
+    "$BASE_REGISTRY:nodejs-latest"
+fi
+if sudo docker image inspect "$BASE_REGISTRY:go-latest" >/dev/null 2>&1; then
+    sudo docker rm -f go-app 2>/dev/null || true
+    sudo docker run -d \
+    --name go-app \
+    -p 8003:80 \
+    --restart unless-stopped \
+    "$BASE_REGISTRY:go-latest"
 fi
 
 # Remove old watchtower container if exists to avoid conflicts
