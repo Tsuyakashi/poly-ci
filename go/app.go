@@ -21,5 +21,4 @@ func main() {
 	log.Fatal(http.ListenAndServe(":80", nil))
 	
 	http.HandleFunc("/health", healthHandler)
-	// this comm will be deleted in release
 }
