@@ -43,7 +43,7 @@ Vagrant.configure("2") do |config|
                     s.env = { "REGISTRATION_TOKEN" => ENV['GITLAB_TOKEN'] }
                     s.inline = <<-SHELL
                         # Install Docker
-                        sudo apt update && sudo apt install -y docker.io
+                        sudo apt-get update && sudo apt-get install -y docker.io
 
                         # Download the binary for your system
                         sudo curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
@@ -54,6 +54,13 @@ Vagrant.configure("2") do |config|
                         # Install and run as a service
                         sudo gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
                         sudo gitlab-runner start
+
+                        # Fix Ubuntu skeleton files for non-interactive shell sessions
+                        sudo mv /home/gitlab-runner/.bash_logout /home/gitlab-runner/.bash_logout.bak 2>/dev/null || true
+                        sudo mv /home/gitlab-runner/.profile /home/gitlab-runner/.profile.bak 2>/dev/null || true
+                        sudo mv /home/gitlab-runner/.bashrc /home/gitlab-runner/.bashrc.bak 2>/dev/null || true
+                        sudo touch /home/gitlab-runner/.profile
+                        sudo chown gitlab-runner:gitlab-runner /home/gitlab-runner/.profile
 
                         # Add runner user to docker group
                         sudo usermod -aG docker gitlab-runner
@@ -80,7 +87,7 @@ Vagrant.configure("2") do |config|
                     }
                     s.inline = <<-SHELL
                         # Install Docker    
-                        sudo apt update && sudo apt install -y docker.io
+                        sudo apt-get update && sudo apt-get install -y docker.io
 
                         # Auth system docker with private gitlab repo
                         echo "$REGISTRY_PASSWORD" | sudo docker login registry.gitlab.com -u "$REGISTRY_USER" --password-stdin
@@ -93,7 +100,7 @@ Vagrant.configure("2") do |config|
                             sudo docker rm -f bsuir-app 2>/dev/null || true
                             sudo docker run -d \
                             --name bsuir-app \
-                            -p 80:5000 \
+                            -p 80:80 \
                             --restart unless-stopped \
                             "$APP_IMAGE"
                         fi
@@ -109,10 +116,11 @@ Vagrant.configure("2") do |config|
                             --restart unless-stopped \
                             -e REPO_USER="$REGISTRY_USER" \
                             -e REPO_PASS="$REGISTRY_PASSWORD" \
+                            -e DOCKER_API_VERSION="1.44" \
                             containrrr/watchtower \
                             --interval 300 \
                             --http-api-update \
-                            --http-api-token $WATCHTOWER_TOKEN \
+                            --http-api-token "$WATCHTOWER_TOKEN" \
                             --cleanup
 
                         sudo mkdir -p /app
