@@ -17,8 +17,8 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handler)
+	http.HandleFunc("/health", healthHandler)
+	
 	fmt.Println("Running demo app. Press Ctrl+C to exit...")
 	log.Fatal(http.ListenAndServe(":80", nil))
-	
-	http.HandleFunc("/health", healthHandler)
 }

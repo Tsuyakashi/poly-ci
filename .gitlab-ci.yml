@@ -25,7 +25,7 @@ variables:
   script:
     - |
       curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
-        -X POST http://$PRODUCTION_IP:8080/v1/update
+        -X POST "http://$PRODUCTION_IP:8080/v1/update?container=${SERVICE_NAME}-app"
 
 
 build_python:
