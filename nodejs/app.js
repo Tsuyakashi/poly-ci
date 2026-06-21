@@ -5,8 +5,6 @@ const port = 80;
 
 app.get('/', (req, res) => res.send('Hello World!'));
 
-app.listen(port, () => console.log(`App listening at http://localhost:${port}`));
-
 const quotes = [
     "Код работает? Не трогай.",
     "Семь раз отмерь, один раз запушь.",
@@ -17,3 +15,5 @@ app.get('/quote', (req, res) => {
     const randomIndex = Math.floor(Math.random() * quotes.length);
     res.send(quotes[randomIndex]);
 });
+
+app.listen(port, () => console.log(`App listening at http://localhost:${port}`));
