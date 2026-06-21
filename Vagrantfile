@@ -43,7 +43,8 @@ Vagrant.configure("2") do |config|
                     s.env = { "REGISTRATION_TOKEN" => ENV['GITLAB_TOKEN'] }
                     s.inline = <<-SHELL
                         # Install Docker
-                        sudo apt-get update && sudo apt-get install -y docker.io
+                        sudo DEBIAN_FRONTEND=noninteractive apt-get update && \
+                            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
 
                         # Download the binary for your system
                         sudo curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
@@ -62,18 +63,17 @@ Vagrant.configure("2") do |config|
                         sudo touch /home/gitlab-runner/.profile
                         sudo chown gitlab-runner:gitlab-runner /home/gitlab-runner/.profile
 
-                        # Add runner user to docker group
-                        sudo usermod -aG docker gitlab-runner
-                        sudo systemctl restart gitlab-runner
-
                         # Non interative runner registation
                         sudo gitlab-runner register \
-                          --non-interactive \
-                          --url "https://gitlab.com/" \
-                          --token "$REGISTRATION_TOKEN" \
-                          --executor "shell" \
-                          --description "vagrant-linux-builder" 
-                    SHELL
+                            --non-interactive \
+                            --url "https://gitlab.com/" \
+                            --token "$REGISTRATION_TOKEN" \
+                            --executor "docker" \
+                            --docker-image "docker:24.0.9" \
+                            --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
+                            --description "vagrant-linux-docker-builder"
+                        
+                        SHELL
                 end
             end
 
@@ -87,7 +87,8 @@ Vagrant.configure("2") do |config|
                     }
                     s.inline = <<-SHELL
                         # Install Docker    
-                        sudo apt-get update && sudo apt-get install -y docker.io
+                        sudo DEBIAN_FRONTEND=noninteractive apt-get update && \
+                            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
 
                         # Auth system docker with private gitlab repo
                         echo "$REGISTRY_PASSWORD" | sudo docker login registry.gitlab.com -u "$REGISTRY_USER" --password-stdin
