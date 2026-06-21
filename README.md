@@ -75,116 +75,98 @@ vagrant up --provider=libvirt
 
 ### 1. UML Диаграмма развертывания (Deployment Diagram)
 
-```
-@startuml
-skinparam backgroundColor #ffffff
-skinparam componentStyle uml2
+```mermaid
+flowchart TB
+    subgraph host["Host Machine (ASUS/G750JX)"]
+        subgraph hv["Hypervisor (Libvirt / KVM)"]
+            subgraph runner_node["runner-builder VM<br/>IP: 192.168.56.10"]
+                runner_svc["gitlab-runner<br/>(Daemon)"]
+                docker_build["docker-engine<br/>(Docker Daemon)"]
+                socket_runner[("UNIX Socket<br/>/var/run/docker.sock")]
+                runner_svc -.uses.-> socket_runner
+                docker_build -.listens.-> socket_runner
+            end
 
-node "Host Machine (ASUS/G750JX)" {
-    node "Hypervisor (Libvirt / KVM)" {
-        
-        node "runner-builder VM\nIP: 192.168.56.10" as runner_node {
-            component "gitlab-runner\n(Daemon)" as runner_svc
-            component "docker-engine\n(Docker Daemon)" as docker_build
-            file "UNIX Socket\n/var/run/docker.sock" as socket_runner
-            runner_svc ..> socket_runner : uses
-            docker_build ..> socket_runner : listens
-        }
-        
-        node "production-node VM\nIP: 192.168.56.11" as prod_node {
-            component "docker-engine\n(Docker Daemon)" as docker_prod
-            
-            node "Docker Bridge Network" {
-                component "bsuir-app\n(Flask Container)" as container_app
-                component "watchtower\n(Updater Container)" as container_wt
-            }
-            docker_prod --> container_app
-            docker_prod --> container_wt
-        }
-    }
-}
+            subgraph prod_node["production-node VM<br/>IP: 192.168.56.11"]
+                docker_prod["docker-engine<br/>(Docker Daemon)"]
+                subgraph bridge["Docker Bridge Network"]
+                    container_app["bsuir-app<br/>(Flask Container)"]
+                    container_wt["watchtower<br/>(Updater Container)"]
+                end
+                docker_prod --> container_app
+                docker_prod --> container_wt
+            end
+        end
+    end
 
-cloud "GitLab Cloud" {
-    database "GitLab Container\nRegistry" as registry
-    component "GitLab CI/CD\nEngine" as gitlab_engine
-}
+    subgraph cloud["GitLab Cloud"]
+        registry[("GitLab Container<br/>Registry")]
+        gitlab_engine["GitLab CI/CD<br/>Engine"]
+    end
 
-runner_svc --> gitlab_engine : Long Polling (HTTPS)
-docker_build --> registry : docker push
-container_wt --> registry : docker pull
-runner_svc --> container_wt : HTTP POST /v1/update (Port 8080)
-@endum
+    runner_svc -->|"Long Polling (HTTPS)"| gitlab_engine
+    docker_build -->|"docker push"| registry
+    container_wt -->|"docker pull"| registry
+    runner_svc -->|"HTTP POST /v1/update (8080)"| container_wt
 ```
 
 ### 2. UML Диаграмма взаимодействия (Sequence Diagram)
 
-```
-@startuml
-autonumber
-skinparam backgroundColor #ffffff
+```mermaid
+sequenceDiagram
+    autonumber
+    actor dev as Разработчик
+    participant gitlab as GitLab Репозиторий
+    participant runner as runner-builder<br/>(192.168.56.10)
+    participant registry as GitLab Registry
+    participant prod as production-node<br/>(192.168.56.11)
 
-actor "Разработчик" as dev
-participant "GitLab Репозиторий" as gitlab
-participant "runner-builder\n(192.168.56.10)" as runner
-participant "GitLab Registry" as registry
-participant "production-node\n(192.168.56.11)" as prod
+    Note over dev,prod: Этап разработки и сборки (Ветка feature)
+    dev->>gitlab: git push (feature/cpu-metrics)
+    gitlab->>runner: Триггер джобы build_job (модель Pull)
+    activate runner
+    runner->>runner: docker build -t bsuir-app:latest ./python/
+    runner->>registry: docker login & docker push
+    deactivate runner
 
-== Этап разработки и сборки (Ветка feature) ==
-dev -> gitlab : git push (feature/cpu-metrics)
-gitlab -> runner : Триггер джобы build_job (модель Pull)
-activate runner
-runner -> runner : docker build -t bsuir-app:latest ./python/
-runner -> registry : docker login & docker push
-deactivate runner
+    Note over dev,prod: Этап деплоя (Слияние в ветку main)
+    dev->>gitlab: Создание & Апрув Merge Request в main
+    gitlab->>runner: Триггер джобы deploy_job
+    activate runner
+    runner->>prod: curl -X POST http://192.168.56.11:8080/v1/update
+    activate prod
+    Note over prod: Агент Watchtower принимает вебхук
+    prod-->>runner: HTTP 200 OK
+    deactivate runner
 
-== Этап деплоя (Слияние в ветку main) ==
-dev -> gitlab : Создание & Апрув Merge Request в ветку main
-gitlab -> runner : Триггер джобы deploy_job
-activate runner
-runner -> prod : curl -X POST http://192.168.56.11:8080/v1/update
-activate prod
-note over prod : Агент Watchtower\nпринимает вебхук
-runner <-- prod : HTTP 200 OK
-deactivate runner
-
-prod -> registry : docker pull bsuir-app:latest
-prod -> prod : Перезапуск контейнера bsuir-app (Порт 80)
-deactivate prod
-@endum
+    prod->>registry: docker pull bsuir-app:latest
+    prod->>prod: Перезапуск контейнера bsuir-app (Порт 80)
+    deactivate prod
 ```
 
 ### 3. Структурная схема сетевых потоков данных
 
-```
-@startuml
-skinparam backgroundColor #ffffff
-allow_mixing
+```mermaid
+flowchart LR
+    subgraph ext["Внешняя сеть (Интернет)"]
+        gl_core["GitLab.com Core Engine"]
+        gl_reg[("registry.gitlab.com")]
+    end
 
-package "Внешняя сеть (Интернет)" {
-    component [GitLab.com Core Engine] as gl_core #lightcyan
-    database [registry.gitlab.com] as gl_reg #lightcyan
-}
+    subgraph local["Локальный контур виртуализации (192.168.56.0/24)"]
+        subgraph runner_box["Node: runner-builder (192.168.56.10)"]
+            build_agent["gitlab-runner agent"]
+            build_cli["docker build client"]
+        end
+        subgraph prod_box["Node: production-node (192.168.56.11)"]
+            wt_agent["watchtower container"]
+            flask_app["bsuir-app web container"]
+        end
+    end
 
-package "Локальный контур виртуализации (Private Network 192.168.56.0/24)" {
-    
-    package "Node: runner-builder (192.168.56.10)" {
-        [gitlab-runner agent] as build_agent
-        [docker build client] as build_cli
-    }
-    
-    package "Node: production-node (192.168.56.11)" {
-        [watchtower container] as wt_agent #lightpoint
-        [bsuir-app web container] as flask_app
-    }
-}
-
-' Потоки трафика
-build_agent --> gl_core : HTTPS (443/tcp) \n[Опрос задач / Long Polling]
-build_cli --> gl_reg : HTTPS (443/tcp) \n[Доставка собранного образа]
-
-build_agent --> wt_agent : HTTP (8080/tcp) \n[Локальный вебхук деплоя /v1/update]
-
-wt_agent --> gl_reg : HTTPS (443/tcp) \n[Скачивание обновленного образа]
-wt_agent --> flask_app : Docker API \n[Бесшовный перезапуск контейнера]
-@endum
+    build_agent -->|"HTTPS 443<br/>Опрос задач / Long Polling"| gl_core
+    build_cli -->|"HTTPS 443<br/>Доставка образа"| gl_reg
+    build_agent -->|"HTTP 8080<br/>Вебхук /v1/update"| wt_agent
+    wt_agent -->|"HTTPS 443<br/>Скачивание образа"| gl_reg
+    wt_agent -->|"Docker API<br/>Перезапуск контейнера"| flask_app
 ```
