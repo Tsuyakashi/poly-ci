@@ -4,6 +4,9 @@ stages:
 
 variables:
   IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
+  DOCKER_API_VERSION: "1.44"  
+
+image: docker:26.1.4 
 
 build_job:
   stage: build
