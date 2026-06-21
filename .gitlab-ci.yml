@@ -12,6 +12,10 @@ build_job:
   stage: build
   tags:
    - linux
+  rules:
+   - if: $CI_COMMIT_BRANCH == "main"
+     changes:
+       - python/**/*
   before_script:
    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
   script:
@@ -23,9 +27,11 @@ deploy_job:
   image: curlimages/curl:latest
   tags:
    - linux
+  rules:
+   - if: $CI_COMMIT_BRANCH == "main"
+     changes:
+       - python/**/*
   script:
    - |
      curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
       -X POST http://$PRODUCTION_IP:8080/v1/update
-  only:
-   - main
