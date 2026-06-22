@@ -2,57 +2,33 @@
 (set -o posix; [ -f /usr/bin/dos2unix ] || (sudo apt-get update && sudo apt-get install -y dos2unix)) && dos2unix "$0"
 
 # Install Docker    
-sudo DEBIAN_FRONTEND=noninteractive apt-get update && \
-    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
+if ! command -v docker &> /dev/null || ! docker compose version &> /dev/null; then
+    sudo DEBIAN_FRONTEND=noninteractive apt-get update && \
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-v2
+fi
 
 # Auth system docker with private gitlab repo
 echo "$REGISTRY_PASSWORD" | sudo docker login registry.gitlab.com -u "$REGISTRY_USER" --password-stdin
 
-# Pull image from registry
-sudo docker pull "$BASE_REGISTRY:python-latest" || echo "Warning: Python image is not ready in registry"
-sudo docker pull "$BASE_REGISTRY:nodejs-latest" || echo "Warning: NodeJS image is not ready in registry"
-sudo docker pull "$BASE_REGISTRY:go-latest" || echo "Warning: Go image is not ready in registry"
+cd /app
 
-#  Run containers if images are ready
-if sudo docker image inspect "$BASE_REGISTRY:python-latest" >/dev/null 2>&1; then
-    sudo docker rm -f python-app 2>/dev/null || true
-    sudo docker run -d \
-    --name python-app \
-    -p 8001:80 \
-    --restart unless-stopped \
-    "$BASE_REGISTRY:python-latest"
-fi
-if sudo docker image inspect "$BASE_REGISTRY:nodejs-latest" >/dev/null 2>&1; then
-    sudo docker rm -f nodejs-app 2>/dev/null || true
-    sudo docker run -d \
-    --name nodejs-app \
-    -p 8002:80 \
-    --restart unless-stopped \
-    "$BASE_REGISTRY:nodejs-latest"
-fi
-if sudo docker image inspect "$BASE_REGISTRY:go-latest" >/dev/null 2>&1; then
-    sudo docker rm -f go-app 2>/dev/null || true
-    sudo docker run -d \
-    --name go-app \
-    -p 8003:80 \
-    --restart unless-stopped \
-    "$BASE_REGISTRY:go-latest"
-fi
+export BASE_REGISTRY REGISTRY_USER REGISTRY_PASSWORD WATCHTOWER_TOKEN
 
-# Remove old watchtower container if exists to avoid conflicts
-sudo docker rm -f watchtower 2>/dev/null || true
+sudo -E docker compose up -d
 
-# Configure watchtower
-sudo docker run -d \
-    --name watchtower \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -p 8080:8080 \
-    --restart unless-stopped \
-    -e REPO_USER="$REGISTRY_USER" \
-    -e REPO_PASS="$REGISTRY_PASSWORD" \
-    -e DOCKER_API_VERSION="1.44" \
-    containrrr/watchtower \
-    --interval 300 \
-    --http-api-update \
-    --http-api-token "$WATCHTOWER_TOKEN" \
-    --cleanup
+echo "Waiting for Kibana..."
+until curl -sf http://localhost/kibana/api/status | grep -q '"level":"available"'; do
+  sleep 5
+done
+
+for view in \
+  'nginx-logs-view:nginx-logs-*:Nginx Logs' \
+  'apps-logs-view:apps-logs-*:Apps Logs'
+do
+  id="${view%%:*}"; rest="${view#*:}"
+  pattern="${rest%%:*}"; name="${rest##*:}"
+  curl -sf -X POST "http://localhost/kibana/api/data_views/data_view" \
+    -H "kbn-xsrf: true" \
+    -H "Content-Type: application/json" \
+    -d "{\"data_view\":{\"id\":\"${id}\",\"title\":\"${pattern}\",\"name\":\"${name}\",\"timeFieldName\":\"@timestamp\"},\"override\":true}" || true
+done

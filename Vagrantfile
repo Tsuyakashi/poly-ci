@@ -12,7 +12,7 @@ ENV['VAGRANT_SERVER_URL'] = 'https://vagrant.elab.pro'
 NODES = 
     {
         "runner-builder" => { hostname: "runner", ip: "192.168.56.10", memory: 1024, cpus: 1 },
-        "production-node" => { hostname: "production", ip: "192.168.56.11", memory: 1024, cpus: 1 }
+        "production-node" => { hostname: "production", ip: "192.168.56.11", memory: 3072, cpus: 3 }
     }
 
 Vagrant.configure("2") do |config|
@@ -49,6 +49,22 @@ Vagrant.configure("2") do |config|
             end
 
             if name == "production-node"
+                node.vm.provision "make_app_dir", type: "shell" do |s| 
+                    s.inline = <<~SHELL
+                        sudo mkdir -p \
+                            /app/nginx \
+                            /app/monitoring \
+                            && sudo chown -R vagrant:vagrant /app
+                    SHELL
+                end
+
+                node.vm.provision "file", source: "docker-compose.yml", destination: "/app/docker-compose.yml"
+                node.vm.provision "file", source: "nginx/nginx.conf", destination: "/app/nginx/nginx.conf"
+                node.vm.provision "file", source: "monitoring/filebeat.yml", destination: "/app/monitoring/filebeat.yml"
+                node.vm.provision "file", source: "monitoring/logstash.conf", destination: "/app/monitoring/logstash.conf"
+                node.vm.provision "file", source: "monitoring/logstash-template.json", destination: "/app/monitoring/logstash-template.json"
+
+
                 node.vm.provision "configure_production", type: "shell" do |s|
                     s.path = "scripts/production.sh"
                     s.binary = true
@@ -56,7 +72,7 @@ Vagrant.configure("2") do |config|
                         "WATCHTOWER_TOKEN"  => ENV['WATCHTOWER_TOKEN'],
                         "REGISTRY_USER"     => ENV['REGISTRY_USER'],
                         "REGISTRY_PASSWORD" => ENV['REGISTRY_PASSWORD'], 
-                        "BASE_REGISTRY"         => ENV['BASE_REGISTRY']
+                        "BASE_REGISTRY"     => ENV['BASE_REGISTRY']
                     }
                 end
             end
