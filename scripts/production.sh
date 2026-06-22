@@ -15,3 +15,20 @@ cd /app
 export BASE_REGISTRY REGISTRY_USER REGISTRY_PASSWORD WATCHTOWER_TOKEN
 
 sudo -E docker compose up -d
+
+echo "Waiting for Kibana..."
+until curl -sf http://localhost/kibana/api/status | grep -q '"level":"available"'; do
+  sleep 5
+done
+
+for view in \
+  'nginx-logs-view:nginx-logs-*:Nginx Logs' \
+  'apps-logs-view:apps-logs-*:Apps Logs'
+do
+  id="${view%%:*}"; rest="${view#*:}"
+  pattern="${rest%%:*}"; name="${rest##*:}"
+  curl -sf -X POST "http://localhost/kibana/api/data_views/data_view" \
+    -H "kbn-xsrf: true" \
+    -H "Content-Type: application/json" \
+    -d "{\"data_view\":{\"id\":\"${id}\",\"title\":\"${pattern}\",\"name\":\"${name}\",\"timeFieldName\":\"@timestamp\"},\"override\":true}" || true
+done
