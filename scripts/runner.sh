@@ -2,8 +2,10 @@
 (set -o posix; [ -f /usr/bin/dos2unix ] || (sudo apt-get update && sudo apt-get install -y dos2unix)) && dos2unix "$0"
 
 # Install Docker
-sudo DEBIAN_FRONTEND=noninteractive apt-get update && \
-    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
+if ! command -v docker &> /dev/null; then
+    sudo DEBIAN_FRONTEND=noninteractive apt-get update && \
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
+fi
 
 # Download the binary for your system
 sudo curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
