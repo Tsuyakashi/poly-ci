@@ -27,6 +27,9 @@ variables:
       curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
         -X POST "http://$PRODUCTION_IP:8080/v1/update?container=${SERVICE_NAME}-app"
 
+# NOTE: Parallel matrix is avoided here because GitLab CI does not support 
+# dynamic CI_COMMIT_BRANCH changes tracking inside matrix loops.
+# Individual jobs ensure that only modified services are built and deployed.
 
 build_python:
   extends: .build_template
@@ -41,6 +44,7 @@ deploy_python:
   extends: .deploy_template
   variables:
     SERVICE_NAME: "python"
+  needs: ["build_python"]
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:
@@ -60,6 +64,7 @@ deploy_go:
   extends: .deploy_template
   variables:
     SERVICE_NAME: "go"
+  needs: ["build_go"]
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:
@@ -79,6 +84,7 @@ deploy_nodejs:
   extends: .deploy_template
   variables:
     SERVICE_NAME: "nodejs"
+  needs: ["build_nodejs"]
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:
