@@ -12,9 +12,9 @@ sudo curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloa
 # Give it permission to execute
 sudo chmod +x /usr/local/bin/gitlab-runner
 # Create a GitLab Runner user
-sudo useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash
+sudo useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash 2>/dev/null || true
 # Install and run as a service
-sudo gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
+sudo gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner || true
 sudo gitlab-runner start
 
 # Fix Ubuntu skeleton files for non-interactive shell sessions
