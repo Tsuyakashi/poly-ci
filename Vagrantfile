@@ -12,7 +12,7 @@ ENV['VAGRANT_SERVER_URL'] = 'https://vagrant.elab.pro'
 NODES = 
     {
         "runner-builder" => { hostname: "runner", ip: "192.168.56.10", memory: 1024, cpus: 1 },
-        "production-node" => { hostname: "production", ip: "192.168.56.11", memory: 2048, cpus: 2 }
+        "production-node" => { hostname: "production", ip: "192.168.56.11", memory: 3072, cpus: 3 }
     }
 
 Vagrant.configure("2") do |config|
