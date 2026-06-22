@@ -53,7 +53,7 @@ Vagrant.configure("2") do |config|
                     s.inline = <<~SHELL
                         sudo mkdir -p \
                             /app/nginx \
-                            /app/monitoring/kibana \
+                            /app/monitoring \
                             && sudo chown -R vagrant:vagrant /app
                     SHELL
                 end
@@ -62,7 +62,9 @@ Vagrant.configure("2") do |config|
                 node.vm.provision "file", source: "nginx/nginx.conf", destination: "/app/nginx/nginx.conf"
                 node.vm.provision "file", source: "monitoring/filebeat.yml", destination: "/app/monitoring/filebeat.yml"
                 node.vm.provision "file", source: "monitoring/logstash.conf", destination: "/app/monitoring/logstash.conf"
-                node.vm.provision "file", source: "monitoring/kibana/dataview.ndjson", destination: "/app/monitoring/kibana/dataview.ndjson"
+                node.vm.provision "file", source: "monitoring/logstash-template.json", destination: "/app/monitoring/logstash-template.json"
+                node.vm.provision "file", source: "monitoring/kibana.yml", destination: "/app/monitoring/kibana.yml"
+
 
                 node.vm.provision "configure_production", type: "shell" do |s|
                     s.path = "scripts/production.sh"

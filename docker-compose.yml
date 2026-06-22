@@ -102,6 +102,7 @@ services:
     container_name: logstash
     volumes:
       - ./monitoring/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./monitoring/logstash-template.json:/usr/share/logstash/pipeline/logstash-template.json:ro
     networks:
       - logging-network  
     restart: unless-stopped
@@ -114,12 +115,10 @@ services:
     expose: 
       - "5601"
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - SERVER_BASEPATH="/kibana"
       - SERVER_REWRITEBASEPATH="true"
-      - ELASTIC_OBSERVABILITY_LOG_SOURCES_DEFAULT_LOG_INDICES=nginx-logs-*,filebeat-*,logs-*
     volumes:
-      - ./monitoring/kibana/dataview.ndjson:/usr/share/kibana/src/core/server/saved_objects/import/initial_objects.ndjson:ro
+      - ./monitoring/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
     networks:
       - logging-network
     restart: unless-stopped

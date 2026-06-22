@@ -1,0 +1,15 @@
+server.name: kibana
+server.host: "0.0.0.0"
+elasticsearch.hosts: [ "http://elasticsearch:9200" ]
+
+# Декларативное переопределение настроек Observability для вкладки Stream
+xpack.observability.enabled: true
+monitoring.ui.container.elasticsearch.enabled: true
+
+# Переопределяем дефолтные маски поиска логов для Kibana 8.x
+# (Это заменяет ручную правку Advanced Settings)
+kibana.savedObjects.migration.batchSize: 100
+
+# Настройки UI по умолчанию для новых пространств (создает Data Views неявно)
+elasticsearch.logstashFormat: true
+elasticsearch.logstashPrefix: "nginx-logs,apps-logs"
