@@ -12,7 +12,7 @@ ENV['VAGRANT_SERVER_URL'] = 'https://vagrant.elab.pro'
 NODES = 
     {
         "runner-builder" => { hostname: "runner", ip: "192.168.56.10", memory: 1024, cpus: 1 },
-        "production-node" => { hostname: "production", ip: "192.168.56.11", memory: 1024, cpus: 1 }
+        "production-node" => { hostname: "production", ip: "192.168.56.11", memory: 2048, cpus: 2 }
     }
 
 Vagrant.configure("2") do |config|
@@ -49,6 +49,11 @@ Vagrant.configure("2") do |config|
             end
 
             if name == "production-node"
+                node.vm.synced_folder "nginx", "/app/nginx", disabled: false
+                node.vm.synced_folder "monitoring", "/app/monitoring", disabled: false
+                node.vm.provision "make_app_dir", type: "shell", inline: "sudo mkdir -p /app && sudo chown -R vagrant:vagrant /app"
+                node.vm.provision "file", source: "docker-compose.yml", destination: "/app/docker-compose.yml"
+
                 node.vm.provision "configure_production", type: "shell" do |s|
                     s.path = "scripts/production.sh"
                     s.binary = true
