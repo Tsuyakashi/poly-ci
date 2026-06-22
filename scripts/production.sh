@@ -3,7 +3,7 @@
 
 # Install Docker    
 sudo DEBIAN_FRONTEND=noninteractive apt-get update && \
-    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-v2
 
 # Auth system docker with private gitlab repo
 echo "$REGISTRY_PASSWORD" | sudo docker login registry.gitlab.com -u "$REGISTRY_USER" --password-stdin
