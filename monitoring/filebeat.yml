@@ -1,19 +1,11 @@
 filebeat.inputs:
-  - type: log
-    enabled: true
+  - type: container
+    stream: all
     paths:
       - /var/lib/docker/containers/*/*.log
 
-output {
-  if [container][name] == "nginx-proxy" {
-    elasticsearch {
-      hosts => ["http://elasticsearch:9200"]
-      index => "nginx-logs-%{+YYYY.MM.dd}"
-    }
-  } else {
-    elasticsearch {
-      hosts => ["http://elasticsearch:9200"]
-      index => "apps-logs-%{+YYYY.MM.dd}"
-    }
-  }
-}
+processors:
+  - add_docker_metadata: ~
+
+output.logstash:
+  hosts: ["logstash:5044"]
