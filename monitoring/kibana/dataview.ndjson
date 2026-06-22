@@ -1,0 +1,1 @@
+{"attributes":{"name":"Nginx Logs","title":"nginx-logs-*","timeFieldName":"@timestamp"},"coreMigrationVersion":"8.11.1","id":"nginx-logs-data-view","type":"data-view","updated_at":"2026-06-22T18:00:00.000Z","version":"WzEsMV0="}

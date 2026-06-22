@@ -116,6 +116,9 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - SERVER_BASEPATH="/kibana"
       - SERVER_REWRITEBASEPATH="true"
+      - ELASTIC_OBSERVABILITY_LOG_SOURCES_DEFAULT_LOG_INDICES=nginx-logs-*,filebeat-*,logs-*
+    volumes:
+      - ./monitoring/kibana/dataview.ndjson:/usr/share/kibana/src/core/server/saved_objects/import/initial_objects.ndjson:ro
     networks:
       - logging-network
     restart: unless-stopped

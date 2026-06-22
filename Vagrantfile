@@ -49,10 +49,20 @@ Vagrant.configure("2") do |config|
             end
 
             if name == "production-node"
-                node.vm.synced_folder "nginx", "/app/nginx", disabled: false
-                node.vm.synced_folder "monitoring", "/app/monitoring", disabled: false
-                node.vm.provision "make_app_dir", type: "shell", inline: "sudo mkdir -p /app && sudo chown -R vagrant:vagrant /app"
+                node.vm.provision "make_app_dir", type: "shell" do |s| 
+                    s.inline = <<~SHELL
+                        sudo mkdir -p \
+                            /app/nginx \
+                            /app/monitoring/kibana \
+                            && sudo chown -R vagrant:vagrant /app
+                    SHELL
+                end
+
                 node.vm.provision "file", source: "docker-compose.yml", destination: "/app/docker-compose.yml"
+                node.vm.provision "file", source: "nginx/nginx.conf", destination: "/app/nginx/nginx.conf"
+                node.vm.provision "file", source: "monitoring/filebeat.yml", destination: "/app/monitoring/filebeat.yml"
+                node.vm.provision "file", source: "monitoring/logstash.conf", destination: "/app/monitoring/logstash.conf"
+                node.vm.provision "file", source: "monitoring/kibana/dataview.ndjson", destination: "/app/monitoring/kibana/dataview.ndjson"
 
                 node.vm.provision "configure_production", type: "shell" do |s|
                     s.path = "scripts/production.sh"
@@ -61,7 +71,7 @@ Vagrant.configure("2") do |config|
                         "WATCHTOWER_TOKEN"  => ENV['WATCHTOWER_TOKEN'],
                         "REGISTRY_USER"     => ENV['REGISTRY_USER'],
                         "REGISTRY_PASSWORD" => ENV['REGISTRY_PASSWORD'], 
-                        "BASE_REGISTRY"         => ENV['BASE_REGISTRY']
+                        "BASE_REGISTRY"     => ENV['BASE_REGISTRY']
                     }
                 end
             end
