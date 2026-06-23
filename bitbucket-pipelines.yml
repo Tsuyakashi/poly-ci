@@ -8,32 +8,24 @@ pipelines:
     main:
     - step:
         name: Build, Push to Bitbucket Registry and Deploy
-        variables:
-          - name: REGISTRY
-            default: "crg.apkg.io"
-          - name: WORKSPACE
-            default: "lab"
         script:
-          - export DOCKER_BUILDKIT=0
-
-          - docker login $REGISTRY -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
-
-          - TARGET_COMMIT=${BITBUCKET_PREV_COMMIT:-"HEAD~1"}
-          - echo "Comparing current commit $BITBUCKET_COMMIT with $TARGET_COMMIT"
-          - CHANGED_FILES=$(git diff --name-only $TARGET_COMMIT $BITBUCKET_COMMIT)
-
           - |
+            REGISTRY="crg.apkg.io"
+            WORKSPACE="lab"
+            DOCKER_BUILDKIT=0
+
+            docker login $REGISTRY -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
+
+            TARGET_COMMIT=${BITBUCKET_PREV_COMMIT:-"HEAD~1"}
+            echo "Comparing $BITBUCKET_COMMIT with $TARGET_COMMIT"
+            CHANGED_FILES=$(git diff --name-only $TARGET_COMMIT $BITBUCKET_COMMIT)
+
             for SERVICE in python go nodejs; do
               if echo "$CHANGED_FILES" | grep -q "^${SERVICE}/"; then
-
                 TAG="${REGISTRY}/${WORKSPACE}/${BITBUCKET_REPO_SLUG}:${SERVICE}-latest"
-
                 docker build -t $TAG ./${SERVICE}/
                 docker push $TAG
-                
-                # curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
-                #   -X POST "http://$PRODUCTION_IP:8080/v1/update?container=${SERVICE}-app"
               else
-                echo "No changes in service: ${SERVICE}. Skipping."
+                echo "No changes in ${SERVICE}. Skipping."
               fi
             done
