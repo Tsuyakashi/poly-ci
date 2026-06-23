@@ -1,0 +1,41 @@
+image: docker:26.1.4
+
+options: 
+  docker: true
+
+definitions:
+  services:
+    - export REGISTRY="crg.apkg.io"
+    - export WORKSPACE="lab"
+  
+pipelines:
+  branches:
+    main:
+      - step:
+          name: Build, Push to Bitbucket Registry and Deploy
+          caches:
+            - docker
+          script:
+            - *services
+            
+            - docker login $REGISTRY -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
+
+            - TARGET_COMMIT=${BITBUCKET_PREV_COMMIT:-"HEAD~1"}
+            - echo "Comparing current commit $BITBUCKET_COMMIT with $TARGET_COMMIT"
+            - CHANGED_FILES=$(git diff --name-only $TARGET_COMMIT $BITBUCKET_COMMIT)
+
+            - |
+              for SERVICE in python go nodejs; do
+                if echo "$CHANGED_FILES" | grep -q "^${SERVICE}/"; then
+
+                  TAG="${REGISTRY}/${WORKSPACE}/${BITBUCKET_REPO_SLUG}:${SERVICE}-latest"
+                  
+                  docker build -t $TAG ./${SERVICE}/
+                  docker push $TAG
+                  
+                  # curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
+                  #   -X POST "http://$PRODUCTION_IP:8080/v1/update?container=${SERVICE}-app"
+                else
+                  echo "No changes in service: ${SERVICE}. Skipping."
+                fi
+              done
