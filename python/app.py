@@ -28,6 +28,9 @@ def hello_world():
     </body>
     </html>
     """
+@app.route('/health')
+def healthcheck():
+    return { "status": "ok" }
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80)
