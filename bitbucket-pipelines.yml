@@ -12,9 +12,10 @@ pipelines:
           - |
             REGISTRY="crg.apkg.io"
             WORKSPACE="lab"
-            DOCKER_BUILDKIT=0
 
             docker login $REGISTRY -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
+            docker buildx create --use --driver docker-container || true
+            docker buildx use default
 
             TARGET_COMMIT=${BITBUCKET_PREV_COMMIT:-"HEAD~1"}
             echo "Comparing $BITBUCKET_COMMIT with $TARGET_COMMIT"
