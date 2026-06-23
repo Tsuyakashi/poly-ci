@@ -3,16 +3,17 @@ image: docker:26.1.4
 options: 
   docker: true
 
-definitions: {}
-
 pipelines:
   branches:
     main:
     - step:
         name: Build, Push to Bitbucket Registry and Deploy
+        variables:
+          - name: REGISTRY
+            default: "crg.apkg.io"
+          - name: WORKSPACE
+            default: "lab"
         script:
-          - export REGISTRY="crg.apkg.io"
-          - export WORKSPACE="lab"
           - export DOCKER_BUILDKIT=0
 
           - docker login $REGISTRY -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
