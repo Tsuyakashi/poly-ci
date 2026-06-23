@@ -1,32 +1,88 @@
-image: docker:20.10.16
+image: docker:26.1.4
 
-options: 
-  docker: true
+definitions:
+  services:
+    docker:
+      memory: 2048
 
 pipelines:
   branches:
     main:
-    - step:
-        name: Build, Push to Bitbucket Registry and Deploy
-        script:
-          - |
-            REGISTRY="crg.apkg.io"
-            WORKSPACE="lab"
+      # Stage 1: Build (параллельно, только изменённые сервисы)
+      - parallel:
+          - step:
+              name: Build Python
+              services: [docker]
+              condition:
+                changesets:
+                  includePaths:
+                    - "python/**"
+              script:
+                - docker login crg.apkg.io -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
+                - docker build -t crg.apkg.io/$BITBUCKET_WORKSPACE/python-app:latest ./python/
+                - docker push crg.apkg.io/$BITBUCKET_WORKSPACE/python-app:latest
 
-            docker login $REGISTRY -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
-            docker buildx create --use --driver docker-container || true
-            docker buildx use default
+          - step:
+              name: Build Go
+              services: [docker]
+              condition:
+                changesets:
+                  includePaths:
+                    - "go/**"
+              script:
+                - docker login crg.apkg.io -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
+                - docker build -t crg.apkg.io/$BITBUCKET_WORKSPACE/go-app:latest ./go/
+                - docker push crg.apkg.io/$BITBUCKET_WORKSPACE/go-app:latest
 
-            TARGET_COMMIT=${BITBUCKET_PREV_COMMIT:-"HEAD~1"}
-            echo "Comparing $BITBUCKET_COMMIT with $TARGET_COMMIT"
-            CHANGED_FILES=$(git diff --name-only $TARGET_COMMIT $BITBUCKET_COMMIT)
+          - step:
+              name: Build Node.js
+              services: [docker]
+              condition:
+                changesets:
+                  includePaths:
+                    - "nodejs/**"
+              script:
+                - docker login crg.apkg.io -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
+                - docker build -t crg.apkg.io/$BITBUCKET_WORKSPACE/nodejs-app:latest ./nodejs/
+                - docker push crg.apkg.io/$BITBUCKET_WORKSPACE/nodejs-app:latest
 
-            for SERVICE in python go nodejs; do
-              if echo "$CHANGED_FILES" | grep -q "^${SERVICE}/"; then
-                TAG="${REGISTRY}/${WORKSPACE}/${BITBUCKET_REPO_SLUG}:${SERVICE}-latest"
-                docker build -t $TAG ./${SERVICE}/
-                docker push $TAG
-              else
-                echo "No changes in ${SERVICE}. Skipping."
-              fi
-            done
+      # Stage 2: Deploy (параллельно, через Watchtower)
+      - parallel:
+          - step:
+              name: Deploy Python
+              image: curlimages/curl:latest
+              condition:
+                changesets:
+                  includePaths:
+                    - "python/**"
+              script:
+                - |
+                  curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
+                    -X POST "http://$PRODUCTION_IP:8080/v1/update?container=python-app" \
+                    || true
+
+          - step:
+              name: Deploy Go
+              image: curlimages/curl:latest
+              condition:
+                changesets:
+                  includePaths:
+                    - "go/**"
+              script:
+                - |
+                  curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
+                    -X POST "http://$PRODUCTION_IP:8080/v1/update?container=go-app" \
+                    || true
+
+          - step:
+              name: Deploy Node.js
+              image: curlimages/curl:latest
+              condition:
+                changesets:
+                  includePaths:
+                    - "nodejs/**"
+              script:
+                - |
+                  curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
+                    -X POST "http://$PRODUCTION_IP:8080/v1/update?container=nodejs-app" \
+                    || true
