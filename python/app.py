@@ -6,7 +6,6 @@ app = Flask(__name__)
 def get_cpu_load():
     try:
         with open("/proc/loadavg", "r") as f:
-            # Берём первое число — средняя загрузка за последнюю 1 минуту
             load_1min = f.read().split()[0]
         return load_1min
     except Exception:

@@ -1,5 +1,3 @@
-image: docker:26.1.4
-
 definitions:
   services:
     docker:
@@ -8,7 +6,6 @@ definitions:
 pipelines:
   branches:
     main:
-      # Stage 1: Build (параллельно, только изменённые сервисы)
       - parallel:
           - step:
               name: Build Python
@@ -19,9 +16,9 @@ pipelines:
                     - "python/**"
               script:
                 - export DOCKER_BUILDKIT=0
-                - docker login crg.apkg.io -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
-                - docker build -t crg.apkg.io/$BITBUCKET_WORKSPACE/python-app:latest ./python/
-                - docker push crg.apkg.io/$BITBUCKET_WORKSPACE/python-app:latest
+                - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                - docker build -t $DOCKERHUB_USERNAME/poly-ci:python-latest ./python/
+                - docker push $DOCKERHUB_USERNAME/poly-ci:python-latest
 
           - step:
               name: Build Go
@@ -31,9 +28,10 @@ pipelines:
                   includePaths:
                     - "go/**"
               script:
-                - docker login crg.apkg.io -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
-                - docker build -t crg.apkg.io/$BITBUCKET_WORKSPACE/go-app:latest ./go/
-                - docker push crg.apkg.io/$BITBUCKET_WORKSPACE/go-app:latest
+                - export DOCKER_BUILDKIT=0
+                - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                - docker build -t $DOCKERHUB_USERNAME/poly-ci:go-latest ./go/
+                - docker push $DOCKERHUB_USERNAME/poly-ci:go-latest
 
           - step:
               name: Build Node.js
@@ -43,11 +41,11 @@ pipelines:
                   includePaths:
                     - "nodejs/**"
               script:
-                - docker login crg.apkg.io -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
-                - docker build -t crg.apkg.io/$BITBUCKET_WORKSPACE/nodejs-app:latest ./nodejs/
-                - docker push crg.apkg.io/$BITBUCKET_WORKSPACE/nodejs-app:latest
+                - export DOCKER_BUILDKIT=0
+                - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                - docker build -t $DOCKERHUB_USERNAME/poly-ci:nodejs-latest ./nodejs/
+                - docker push $DOCKERHUB_USERNAME/poly-ci:nodejs-latest
 
-      # Stage 2: Deploy (параллельно, через Watchtower)
       - parallel:
           - step:
               name: Deploy Python
@@ -57,10 +55,7 @@ pipelines:
                   includePaths:
                     - "python/**"
               script:
-                - |
-                  curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
-                    -X POST "http://$PRODUCTION_IP:8080/v1/update?container=python-app" \
-                    || true
+                - curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" -X POST "http://$PRODUCTION_IP:8080/v1/update?container=python-app" || true
 
           - step:
               name: Deploy Go
@@ -70,10 +65,7 @@ pipelines:
                   includePaths:
                     - "go/**"
               script:
-                - |
-                  curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
-                    -X POST "http://$PRODUCTION_IP:8080/v1/update?container=go-app" \
-                    || true
+                - curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" -X POST "http://$PRODUCTION_IP:8080/v1/update?container=go-app" || true
 
           - step:
               name: Deploy Node.js
@@ -83,7 +75,4 @@ pipelines:
                   includePaths:
                     - "nodejs/**"
               script:
-                - |
-                  curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
-                    -X POST "http://$PRODUCTION_IP:8080/v1/update?container=nodejs-app" \
-                    || true
+                - curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" -X POST "http://$PRODUCTION_IP:8080/v1/update?container=nodejs-app" || true
