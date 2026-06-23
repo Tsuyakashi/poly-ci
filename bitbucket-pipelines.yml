@@ -18,8 +18,8 @@ pipelines:
                   includePaths:
                     - "python/**"
               script:
+                - export DOCKER_BUILDKIT=0
                 - docker login crg.apkg.io -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
-                - docker buildx create --use --driver docker
                 - docker build -t crg.apkg.io/$BITBUCKET_WORKSPACE/python-app:latest ./python/
                 - docker push crg.apkg.io/$BITBUCKET_WORKSPACE/python-app:latest
 
