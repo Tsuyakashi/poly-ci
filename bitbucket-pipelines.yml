@@ -3,21 +3,17 @@ image: docker:26.1.4
 options: 
   docker: true
 
-definitions:
-  services:
-    - export REGISTRY="crg.apkg.io"
-    - export WORKSPACE="lab"
-  
+definitions: {}
+
 pipelines:
-  branches:
+branches:
   main:
     - step:
         name: Build, Push to Bitbucket Registry and Deploy
-        caches:
-          - docker
         script:
-          - *services
-          
+          - export REGISTRY="crg.apkg.io"
+          - export WORKSPACE="lab"
+
           - docker login $REGISTRY -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
 
           - TARGET_COMMIT=${BITBUCKET_PREV_COMMIT:-"HEAD~1"}
@@ -29,7 +25,7 @@ pipelines:
               if echo "$CHANGED_FILES" | grep -q "^${SERVICE}/"; then
 
                 TAG="${REGISTRY}/${WORKSPACE}/${BITBUCKET_REPO_SLUG}:${SERVICE}-latest"
-                
+
                 docker build -t $TAG ./${SERVICE}/
                 docker push $TAG
                 

@@ -28,6 +28,7 @@ def hello_world():
     </body>
     </html>
     """
+
 @app.route('/health')
 def healthcheck():
     return { "status": "ok" }
