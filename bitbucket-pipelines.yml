@@ -6,8 +6,8 @@ options:
 definitions: {}
 
 pipelines:
-branches:
-  main:
+  branches:
+    main:
     - step:
         name: Build, Push to Bitbucket Registry and Deploy
         script:
