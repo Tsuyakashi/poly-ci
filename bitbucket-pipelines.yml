@@ -13,6 +13,7 @@ pipelines:
         script:
           - export REGISTRY="crg.apkg.io"
           - export WORKSPACE="lab"
+          - export DOCKER_BUILDKIT=0
 
           - docker login $REGISTRY -u "$BITBUCKET_PACKAGES_USERNAME" -p "$BITBUCKET_PACKAGES_TOKEN"
 
