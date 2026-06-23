@@ -26,7 +26,8 @@ image: docker:26.1.4
   script:
     - |
       curl -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
-        -X POST "http://$PRODUCTION_IP:8080/v1/update?container=${SERVICE_NAME}-app"
+        -X POST "http://$PRODUCTION_IP:8080/v1/update?container=${SERVICE_NAME}-app" \
+        || true 
 
 # NOTE: Parallel matrix is avoided here because GitLab CI does not support 
 # dynamic CI_COMMIT_BRANCH changes tracking inside matrix loops.
