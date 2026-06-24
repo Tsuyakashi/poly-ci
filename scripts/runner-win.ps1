@@ -3,17 +3,15 @@
 # Runs under SYSTEM via Vagrant WinRM provisioner
 $ErrorActionPreference = "Stop"
 
-# ── 1. Hyper-V (required for Linux containers via MCR) ──────────────────────
 Write-Host "[runner] Enabling Hyper-V..."
 $hv = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All
 if ($hv.State -ne "Enabled") {
     Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -All -NoRestart
-    Write-Host "[runner] Hyper-V enabled — reboot will happen at end of provisioning."
+    Write-Host "[runner] Hyper-V enabled - reboot will happen at end of provisioning."
 } else {
     Write-Host "[runner] Hyper-V already enabled."
 }
 
-# ── 2. Mirantis Container Runtime (MCR) ─────────────────────────────────────
 Write-Host "[runner] Installing MCR..."
 # Install NuGet provider silently first
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
@@ -29,7 +27,6 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Write-Host "[runner] Docker already present, skipping MCR install."
 }
 
-# ── 3. Switch dockerd to Linux Containers (LCOW via Hyper-V) ────────────────
 Write-Host "[runner] Configuring dockerd for Linux containers..."
 $daemonConfig = @{
     experimental = $true
@@ -48,7 +45,6 @@ Start-Sleep -Seconds 10
 docker version | Out-Null
 Write-Host "[runner] Docker daemon running."
 
-# ── 4. docker compose plugin ────────────────────────────────────────────────
 Write-Host "[runner] Installing docker compose plugin..."
 $composeVersion = "v2.27.0"
 $composeDest    = "C:\Program Files\Docker\cli-plugins"
@@ -58,7 +54,6 @@ Invoke-WebRequest -UseBasicParsing `
     -OutFile "$composeDest\docker-compose.exe"
 Write-Host "[runner] docker compose $composeVersion installed."
 
-# ── 5. GitLab Runner ─────────────────────────────────────────────────────────
 Write-Host "[runner] Installing gitlab-runner..."
 $runnerDir = "C:\gitlab-runner"
 New-Item -Path $runnerDir -ItemType Directory -Force | Out-Null
@@ -73,10 +68,9 @@ Set-Location $runnerDir
 .\gitlab-runner.exe start
 Write-Host "[runner] gitlab-runner service started."
 
-# ── 6. Register runner ───────────────────────────────────────────────────────
 $token = $env:REGISTRATION_TOKEN
 if (-not $token) {
-    Write-Warning "[runner] REGISTRATION_TOKEN not set — skipping registration."
+    Write-Warning "[runner] REGISTRATION_TOKEN not set - skipping registration."
 } else {
     Write-Host "[runner] Registering gitlab-runner..."
     # Named pipe path for docker socket volume in CI jobs
