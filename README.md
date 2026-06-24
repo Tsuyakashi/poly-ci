@@ -57,7 +57,7 @@ GITLAB_TOKEN=your_gitlab_runner_registration_token
 WATCHTOWER_TOKEN=secure_secret_token_for_webhooks
 REGISTRY_USER=your_gitlab_username
 REGISTRY_PASSWORD=your_gitlab_personal_access_token
-BASE_REGISTRY=registry.gitlab.com/your_username/your_repo:latest
+BASE_REGISTRY=registry.gitlab.com/your_username/your_repo
 ```
 
 ### Шаг 2: Поднятие инфраструктуры
