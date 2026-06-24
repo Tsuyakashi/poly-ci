@@ -76,10 +76,10 @@
                         lv.nested            = true
                         lv.cpu_mode          = "host-passthrough"
                         # Expose Hyper-V enlightenments so Windows guest detects it correctly
-                        lv.hyperv_relaxed    = true
-                        lv.hyperv_vapic      = true
-                        lv.hyperv_spinlocks  = true
-                        lv.hyperv_spinlocks_retries = 8191
+
+                        lv.hyperv_feature name: 'relaxed',   state: 'on'
+                        lv.hyperv_feature name: 'vapic',     state: 'on'
+                        lv.hyperv_feature name: 'spinlocks', state: 'on', retries: '8191'
                     end
                 end
             
