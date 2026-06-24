@@ -45,8 +45,16 @@
     Vagrant.configure("2") do |config|
         
         if PLATFORM == 'windows'
-            config.vm.box              = "gusztavvargadr/windows-server"
-            config.vm.box_version      = ">= 2202.0.0"
+            
+            # DOWNLOAD FROM
+            # https://vagrantcloud-files-production.s3-accelerate.amazonaws.com/archivist/boxes/gusztavvargadr/windows-server-2025-standard-core/2601.0.0/libvirt
+            
+            # ADD WITH 
+            # vagrant box add gusztavvargadr/windows-server-core ./e6a44741-ff98-11f0-afed-d26e708a301d --provider libvirt
+            
+            config.vm.box              = "gusztavvargadr/windows-server-core"
+            # config.vm.box_version      = ">= 2202.0.0"
+            
             config.vm.guest            = :windows
             config.vm.communicator     = "winrm"
             config.winrm.transport     = :negotiate
