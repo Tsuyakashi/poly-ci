@@ -27,7 +27,7 @@
 
 
     LINUX_NODES = {
-        "runner-builder"  => { hostname: "runner",     ip: "192.168.56.10", memory: 1024, cpus: 1 },
+        "runner-node"  => { hostname: "runner",     ip: "192.168.56.10", memory: 1024, cpus: 1 },
         "production-node" => { hostname: "production", ip: "192.168.56.11", memory: 3072, cpus: 3 }
     }.freeze
     
@@ -35,7 +35,7 @@
     #   runner: MCR daemon + gitlab-runner service
     #   prod:   MCR daemon + Hyper-V Linux VM for LCOW + nginx/app containers
     WINDOWS_NODES = {
-        "runner-builder-win"  => { hostname: "runner-win",     ip: "192.168.56.20", memory: 2048, cpus: 2 },
+        "runner-node-win"  => { hostname: "runner-win",     ip: "192.168.56.20", memory: 2048, cpus: 2 },
         "production-node-win" => { hostname: "production-win", ip: "192.168.56.21", memory: 4096, cpus: 4 }
     }.freeze
     
@@ -109,7 +109,7 @@
 
                 if PLATFORM == 'linux'
     
-                    if name == "runner-builder"
+                    if name == "runner-node"
                         node.vm.provision "configure_runner", type: "shell" do |s|
                             s.path   = "scripts/runner.sh"
                             s.binary = true
@@ -148,7 +148,7 @@
                 # ═══════════════════════════════════════════════════════════════════
                 elsif PLATFORM == 'windows'
         
-                    if name == "runner-builder-win"
+                    if name == "runner-node-win"
                         node.vm.provision "install_hyperv", type: "shell",
                             privileged: true, powershell_elevated_interactive: false,
                             run: "once" do |s|
