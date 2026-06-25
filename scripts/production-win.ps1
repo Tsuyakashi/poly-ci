@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 Write-Host "[prod] Enabling Hyper-V..."
 $hv = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All
 if ($hv.State -ne "Enabled") {
-    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -All -NoRestart
+    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -All -Restart:$false
 } else {
     Write-Host "[prod] Hyper-V already enabled."
 }
