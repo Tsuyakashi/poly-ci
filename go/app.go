@@ -1,24 +1,63 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
+	"time"
 )
 
+func loggingMiddleware(next http.Hanndler) http.Hander {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.path == "/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		start := Time.Now()
+		next.ServeHTTP(w, r)
+
+		slog.Info("Request handled",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"remote_addr", r.RemoteAddr,
+			"duration", time.Since(start).String(),
+		)
+	})
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello, 世界")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write([]byte("Hello, 世界\n"))
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, `{"status": "UP"}`)
+	w.Write([]byte(`{"status": "UP"}`))
 }
 
 func main() {
-	http.HandleFunc("/", handler)
-	http.HandleFunc("/health", healthHandler)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	slog.SetDefault(logger)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", handler)
+	mux.HandleFunc("/health", healthHandler)
+
+	wrappedMux := loggingMiddleware(mux)
+
+	slog.Info("Starting production server", "port", "80")
 	
-	fmt.Println("Running demo app. Press Ctrl+C to exit...")
-	log.Fatal(http.ListenAndServe(":80", nil))
+	server := &http.Server{
+		Addr:         ":80",
+		Handler:      wrappedMux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
+		slog.Error("Server failed to start", "error", err)
+		os.Exit(1)
+	}
 }
