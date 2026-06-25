@@ -2,7 +2,7 @@
 # Provision: MCR + docker compose (no ELK) on Windows Server 2022 production node
 $ErrorActionPreference = "Stop"
 
-# ── 1. Hyper-V ───────────────────────────────────────────────────────────────
+# -- 1. Hyper-V ---------------------------------------------------------------
 Write-Host "[prod] Enabling Hyper-V..."
 $hv = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All
 if ($hv.State -ne "Enabled") {
@@ -11,7 +11,7 @@ if ($hv.State -ne "Enabled") {
     Write-Host "[prod] Hyper-V already enabled."
 }
 
-# ── 2. MCR ───────────────────────────────────────────────────────────────────
+# -- 2. MCR -------------------------------------------------------------------
 Write-Host "[prod] Installing MCR..."
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
 
@@ -24,7 +24,7 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Write-Host "[prod] Docker already present."
 }
 
-# ── 3. daemon.json — Linux containers mode ───────────────────────────────────
+# -- 3. daemon.json — Linux containers mode -----------------------------------
 $daemonConfig = @{
     experimental = $true
     hosts        = @("npipe:////./pipe/docker_engine", "tcp://0.0.0.0:2376")
@@ -39,7 +39,7 @@ Start-Sleep -Seconds 10
 docker version | Out-Null
 Write-Host "[prod] Docker daemon running."
 
-# ── 4. docker compose plugin ─────────────────────────────────────────────────
+# -- 4. docker compose plugin -------------------------------------------------
 $composeVersion = "v2.27.0"
 $composeDest    = "C:\Program Files\Docker\cli-plugins"
 New-Item -Path $composeDest -ItemType Directory -Force | Out-Null
@@ -47,7 +47,7 @@ Invoke-WebRequest -UseBasicParsing `
     "https://github.com/docker/compose/releases/download/$composeVersion/docker-compose-windows-x86_64.exe" `
     -OutFile "$composeDest\docker-compose.exe"
 
-# ── 5. App directory ─────────────────────────────────────────────────────────
+# -- 5. App directory ---------------------------------------------------------
 $appDir = "C:\app"
 New-Item -Path $appDir          -ItemType Directory -Force | Out-Null
 New-Item -Path "$appDir\nginx"  -ItemType Directory -Force | Out-Null
@@ -58,7 +58,7 @@ Write-Host "[prod] App directory ready at $appDir"
 #   C:\app\docker-compose.windows.yml
 #   C:\app\nginx\nginx.conf
 
-# ── 6. .env file for compose ─────────────────────────────────────────────────
+# -- 6. .env file for compose -------------------------------------------------
 $envContent = @"
 BASE_REGISTRY=$env:BASE_REGISTRY
 REGISTRY_USER=$env:REGISTRY_USER
@@ -68,19 +68,19 @@ WATCHTOWER_TOKEN=$env:WATCHTOWER_TOKEN
 Set-Content -Path "$appDir\.env" -Value $envContent -Encoding ASCII
 Write-Host "[prod] .env written."
 
-# ── 7. Registry login ────────────────────────────────────────────────────────
+# -- 7. Registry login --------------------------------------------------------
 Write-Host "[prod] Logging into registry..."
 $env:REGISTRY_PASSWORD | docker login $env:BASE_REGISTRY.Split("/")[0] `
     -u $env:REGISTRY_USER --password-stdin
 Write-Host "[prod] Registry login OK."
 
-# ── 8. docker compose up ─────────────────────────────────────────────────────
+# -- 8. docker compose up -----------------------------------------------------
 Write-Host "[prod] Starting services..."
 Set-Location $appDir
 docker compose -f docker-compose.windows.yml --env-file .env up -d
 Write-Host "[prod] Services started."
 
-# ── 9. Firewall rules ────────────────────────────────────────────────────────
+# -- 9. Firewall rules --------------------------------------------------------
 Write-Host "[prod] Opening firewall ports..."
 $rules = @(
     @{ Name = "HTTP";      Port = 80   },
