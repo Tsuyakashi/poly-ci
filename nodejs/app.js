@@ -1,7 +1,7 @@
 const express = require('express');
 const morgan = require('morgan')
 const app = express();
-const port = process.env.PORT || 80;
+const port = process.env.PORT || 8080;
 
 app.use(morgan('short', {
     skip: (req, res) => req.url === '/health' || req.url === '/healthcheck'

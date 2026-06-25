@@ -7,14 +7,14 @@ import (
 	"time"
 )
 
-func loggingMiddleware(next http.Hanndler) http.Hander {
+func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.path == "/health" {
+		if r.URL.Path == "/health" {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		start := Time.Now()
+		start := time.Now()
 		next.ServeHTTP(w, r)
 
 		slog.Info("Request handled",
@@ -50,7 +50,7 @@ func main() {
 	slog.Info("Starting production server", "port", "80")
 	
 	server := &http.Server{
-		Addr:         ":80",
+		Addr:         ":8080",
 		Handler:      wrappedMux,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
