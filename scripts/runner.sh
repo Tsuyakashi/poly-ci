@@ -2,15 +2,17 @@
 (set -o posix; [ -f /usr/bin/dos2unix ] || (sudo apt-get update && sudo apt-get install -y dos2unix)) && dos2unix "$0"
 
 # Install Docker
+echo "Installing docker"
 if ! command -v docker &> /dev/null; then
-    sudo DEBIAN_FRONTEND=noninteractive apt-get update && \
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
+    sudo DEBIAN_FRONTEND=noninteractive apt-get update &>/dev/null \
+        && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io &>/dev/null
 fi
 
+echo "Installing and starting gitlab runner"
 # Download the binary for your system
-sudo curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
+sudo curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64 &>/dev/null
 # Give it permission to execute
-sudo chmod +x /usr/local/bin/gitlab-runner
+sudo chmod +x /usr/local/bin/gitlab-runner  &>/dev/null
 # Create a GitLab Runner user
 sudo useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash 2>/dev/null || true
 # Install and run as a service
@@ -24,6 +26,7 @@ sudo mv /home/gitlab-runner/.bashrc /home/gitlab-runner/.bashrc.bak 2>/dev/null 
 sudo touch /home/gitlab-runner/.profile
 sudo chown gitlab-runner:gitlab-runner /home/gitlab-runner/.profile
 
+echo "Non interactive runner registration"
 # Non interative runner registation
 sudo gitlab-runner register \
     --non-interactive \
