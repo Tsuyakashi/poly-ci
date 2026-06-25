@@ -7,8 +7,8 @@ $ErrorActionPreference = "Stop"
 Write-Host "[runner] Enabling Hyper-V..."
 $hv = Get-WindowsFeature -Name Hyper-V
 if ($hv.InstallState -ne "Installed") {
-    Install-WindowsFeature -Name Hyper-V -IncludeAllSubFeature -IncludeManagementTools -NoRestart
-    Write-Host "[runner] Hyper-V enabled — reboot will happen at end of provisioning."
+    Install-WindowsFeature -Name Hyper-V -IncludeAllSubFeature -IncludeManagementTools -Restart:$false
+    Write-Host "[runner] Hyper-V enabled - reboot will happen at end of provisioning."
 } else {
     Write-Host "[runner] Hyper-V already enabled."
 }
