@@ -47,7 +47,7 @@ func main() {
 
 	wrappedMux := loggingMiddleware(mux)
 
-	slog.Info("Starting production server", "port", "80")
+	slog.Info("Starting production server", "port", "8080")
 	
 	server := &http.Server{
 		Addr:         ":8080",
