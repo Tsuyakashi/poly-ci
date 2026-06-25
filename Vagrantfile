@@ -28,7 +28,7 @@
 
     LINUX_NODES = {
         "runner-node"  => { hostname: "runner",     ip: "192.168.56.10", memory: 1024, cpus: 1 },
-        "production-node" => { hostname: "production", ip: "192.168.56.11", memory: 3072, cpus: 3 }
+        "production-node" => { hostname: "production", ip: "192.168.56.11", memory: 2048, cpus: 2 }
     }.freeze
     
     # Windows Server 2022 needs more RAM:
