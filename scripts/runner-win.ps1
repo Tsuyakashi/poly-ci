@@ -37,6 +37,13 @@ Write-Host "[runner] Installing gitlab-runner..."
 $runnerDir = "C:\gitlab-runner"
 New-Item -Path $runnerDir -ItemType Directory -Force | Out-Null
 
+# Stop service if already running before overwriting binary
+$svc = Get-Service -Name "gitlab-runner" -ErrorAction SilentlyContinue
+if ($svc) {
+    Stop-Service gitlab-runner -Force
+    & "$runnerDir\gitlab-runner.exe" uninstall
+}
+
 Invoke-WebRequest -UseBasicParsing `
     "https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-windows-amd64.exe" `
     -OutFile "$runnerDir\gitlab-runner.exe"
