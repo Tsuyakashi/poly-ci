@@ -1,19 +1,22 @@
-# Dockerfile
-FROM node:latest
+FROM node:20-alpine AS builder
 
-# Создание директории приложения
 WORKDIR /usr/src/app
 
-# Установка зависимостей приложения
-# Используется символ подстановки для копирования обоих файлов package.json и package-lock.json
 COPY package*.json ./
+RUN npm install morgan && npm ci --only=production
 
-RUN npm install
+FROM node:20-alpine AS final
 
-# Копирование исходного кода приложения
-COPY . .
+WORKDIR /usr/src/app
 
-# Привязка порта, который будет использоваться приложением
-EXPOSE 80
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY package*.json ./
+COPY app.js .
+
+USER node
+
+EXPOSE 8080
+ENV PORT=8080
+ENV NODE_ENV=production
 
 CMD [ "node", "app.js" ]

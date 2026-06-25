@@ -1,5 +1,12 @@
-from flask import Flask
 import datetime
+import logging
+import os
+from flask import Flask, request
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
+)
 
 app = Flask(__name__)
 
@@ -8,8 +15,14 @@ def get_cpu_load():
         with open("/proc/loadavg", "r") as f:
             load_1min = f.read().split()[0]
         return load_1min
-    except Exception:
+    except Exception as e:
+        app.logger.error(f"Failed to get CPU load: {e}")
         return "N/A"
+
+@app.before_request
+def log_request_info():
+    if request.path != '/health':  # чтобы не спамить логами хелсчеков
+        app.logger.info(f"HTTP {request.method} {request.path} from {request.remote_addr}")
 
 @app.route('/')
 def hello_world():
@@ -30,6 +43,3 @@ def hello_world():
 @app.route('/health')
 def healthcheck():
     return { "status": "ok" }
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80)

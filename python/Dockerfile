@@ -1,17 +1,19 @@
-# Dockerfile
-FROM python:3.8-slim
+FROM python:3.11-slim AS builder
 
-# Установка рабочего каталога в контейнере
 WORKDIR /app
 
-# Копирование файлов в контейнер
-COPY . /app
+RUN pip install --no-cache-dir --prefix=/install flask gunicorn
 
-# Установка зависимостей
-RUN pip install flask
+FROM python:3.11-slim AS final
 
-# Определение порта, на котором будет работать приложение
-EXPOSE 80
+WORKDIR /app
 
-# Запуск приложения
-CMD ["python", "app.py"]
+COPY --from=builder /install /usr/local
+COPY app.py .
+
+USER 10001
+
+EXPOSE 8080
+ENV PORT=8080
+
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "4", "app:app"]
