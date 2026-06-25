@@ -1,6 +1,6 @@
 networks:
   web-network:
-    driver: bridge  
+    driver: bridge
   logging-network:
     driver: bridge
 
@@ -61,8 +61,8 @@ services:
       - WATCHTOWER_HTTP_API_UPDATE=true
       - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
       - DOCKER_API_VERSION=1.44
-    expose:
-      - "8080"
+    ports:
+      - 8080:8080
     networks:
       - web-network
     restart: unless-stopped
@@ -115,7 +115,7 @@ services:
         limits:
           memory: 512m
     networks:
-      - logging-network  
+      - logging-network
     restart: unless-stopped
     depends_on:
       - elasticsearch
@@ -123,7 +123,7 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.1
     container_name: kibana
-    expose: 
+    expose:
       - "5601"
     environment:
       - SERVER_BASEPATH=/kibana
