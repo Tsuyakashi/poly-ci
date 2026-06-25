@@ -68,7 +68,8 @@ if (-not $token) {
         --non-interactive `
         --url "https://gitlab.com/" `
         --token "$token" `
-        --executor "docker" `
+        --executor "shell" `
+        --shell "powershell" `
         --docker-image "docker:26.1.4" `
         --docker-volumes "$socketVol" `
         --docker-pull-policy "if-not-present" `
