@@ -68,4 +68,12 @@ if (-not $token) {
     Write-Host "[runner] Runner registered."
 }
 
+# Fix cache volume path for Windows
+$configPath = "C:\gitlab-runner\config.toml"
+$config = Get-Content $configPath -Raw
+$config = $config -replace 'volumes = \["/cache"\]', 'volumes = ["//./pipe/docker_engine://./pipe/docker_engine", "C:\\\\cache:C:\\\\cache"]'
+Set-Content $configPath $config -Encoding UTF8
+Restart-Service gitlab-runner
+Write-Host "[runner] config.toml patched for Windows volumes."
+
 Write-Host "[runner] Provisioning complete."
