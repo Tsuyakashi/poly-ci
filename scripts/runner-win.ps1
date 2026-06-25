@@ -3,16 +3,6 @@
 # Runs under SYSTEM via Vagrant WinRM provisioner
 $ErrorActionPreference = "Stop"
 
-# Hyper-V (required for Linux containers via MCR)
-Write-Host "[runner] Enabling Hyper-V..."
-$hv = Get-WindowsFeature -Name Hyper-V
-if ($hv.InstallState -ne "Installed") {
-    Install-WindowsFeature -Name Hyper-V -IncludeAllSubFeature -IncludeManagementTools -Restart:$false
-    Write-Host "[runner] Hyper-V enabled - reboot will happen at end of provisioning."
-} else {
-    Write-Host "[runner] Hyper-V already enabled."
-}
-
 Write-Host "[runner] Installing MCR..."
 # Install NuGet provider silently first
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null

@@ -149,8 +149,25 @@
                 elsif PLATFORM == 'windows'
         
                     if name == "runner-builder-win"
+                        node.vm.provision "install_hyperv", type: "shell",
+                            privileged: true, powershell_elevated_interactive: false,
+                            run: "once" do |s|
+                            s.inline = <<~PS
+                                $hv = Get-WindowsFeature -Name Hyper-V
+                                if ($hv.InstallState -ne "Installed") {
+                                    Install-WindowsFeature -Name Hyper-V -IncludeAllSubFeature -IncludeManagementTools -Restart:$false
+                                }
+                            PS
+                        end
+                        
+                        node.vm.provision "reboot_after_hyperv", type: "shell",
+                            privileged: true, powershell_elevated_interactive: false,
+                            run: "once" do |s|
+                            s.reboot = true
+                        end
+                    
                         node.vm.provision "configure_runner_win", type: "shell",
-                                        privileged: true, powershell_elevated_interactive: false do |s|
+                            privileged: true, powershell_elevated_interactive: false do |s|
                             s.path = "scripts/runner-win.ps1"
                             s.env  = { "REGISTRATION_TOKEN" => ENV['GITLAB_TOKEN'] }
                         end
