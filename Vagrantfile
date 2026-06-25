@@ -159,13 +159,30 @@
                                 }
                             PS
                         end
-                        
+
                         node.vm.provision "reboot_after_hyperv", type: "shell",
                             privileged: true, powershell_elevated_interactive: false,
                             run: "once" do |s|
                             s.reboot = true
                         end
                     
+                        node.vm.provision "install_mcr", type: "shell",
+                            privileged: true, powershell_elevated_interactive: false,
+                            run: "once" do |s|
+                            s.inline = <<~PS
+                                Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
+                                Invoke-WebRequest -UseBasicParsing "https://get.mirantis.com/install.ps1" -OutFile "$env:TEMP\\mcr-install.ps1"
+                                & "$env:TEMP\\mcr-install.ps1" -Channel "stable" | Out-Null
+                            PS
+                        end
+                        
+                        node.vm.provision "reboot_after_mcr", type: "shell",
+                            privileged: true, powershell_elevated_interactive: false,
+                            run: "once" do |s|
+                            s.reboot = true
+                        end
+
+
                         node.vm.provision "configure_runner_win", type: "shell",
                             privileged: true, powershell_elevated_interactive: false do |s|
                             s.path = "scripts/runner-win.ps1"

@@ -3,21 +3,6 @@
 # Runs under SYSTEM via Vagrant WinRM provisioner
 $ErrorActionPreference = "Stop"
 
-Write-Host "[runner] Installing MCR..."
-# Install NuGet provider silently first
-Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
-
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    # MCR install script (official Mirantis method)
-    Invoke-WebRequest -UseBasicParsing `
-        "https://get.mirantis.com/install.ps1" `
-        -OutFile "$env:TEMP\mcr-install.ps1"
-    & "$env:TEMP\mcr-install.ps1" -Channel "stable" | Out-Null
-    Write-Host "[runner] MCR installed."
-} else {
-    Write-Host "[runner] Docker already present, skipping MCR install."
-}
-
 Write-Host "[runner] Configuring dockerd for Linux containers..."
 $daemonConfig = @{
     experimental = $true
@@ -30,10 +15,13 @@ New-Item -Path (Split-Path $daemonPath) -ItemType Directory -Force | Out-Null
 Set-Content -Path $daemonPath -Value $daemonConfig -Encoding ASCII
 
 Restart-Service docker -Force
-Start-Sleep -Seconds 10
+Start-Sleep -Seconds 20
 
 # Verify docker is up
-docker version | Out-Null
+$result = docker version 2>&1
+if ($LASTEXITCODE -ne 0) {
+    throw "[runner] Docker daemon failed to start: $result"
+}
 Write-Host "[runner] Docker daemon running."
 
 Write-Host "[runner] Installing docker compose plugin..."
