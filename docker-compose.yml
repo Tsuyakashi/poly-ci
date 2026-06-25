@@ -25,7 +25,7 @@ services:
     image: ${BASE_REGISTRY}:python-latest
     container_name: python-app
     expose:
-      - "80"
+      - "8080"
     networks:
       - web-network
     restart: unless-stopped
@@ -34,7 +34,7 @@ services:
     image: ${BASE_REGISTRY}:nodejs-latest
     container_name: nodejs-app
     expose:
-      - "80"
+      - "8080"
     networks:
       - web-network
     restart: unless-stopped
@@ -43,7 +43,7 @@ services:
     image: ${BASE_REGISTRY}:go-latest
     container_name: go-app
     expose:
-      - "80"
+      - "8080"
     networks:
       - web-network
     restart: unless-stopped
@@ -94,6 +94,10 @@ services:
       - cluster.routing.allocation.disk.watermark.flood_stage=95%
     volumes:
       - es-data:/usr/share/elasticsearch/data
+    deploy:
+      resources:
+        limits:
+          memory: 1g
     networks:
       - logging-network
     restart: unless-stopped
@@ -106,6 +110,10 @@ services:
     volumes:
       - ./monitoring/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
       - ./monitoring/logstash-template.json:/usr/share/logstash/templates/logstash-template.json:ro
+    deploy:
+      resources:
+        limits:
+          memory: 512m
     networks:
       - logging-network  
     restart: unless-stopped
