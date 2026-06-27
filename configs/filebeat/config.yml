@@ -11,6 +11,11 @@ filebeat.inputs:
     processors:
       - add_docker_metadata:
           host: "unix:///var/run/docker.sock"
+      # - drop_event:
+      #   when:
+      #     not:
+      #       equals:
+      #         container.name: "nginx-proxy"
     fields:
       # Название нашего сервиса
       service: nginx
