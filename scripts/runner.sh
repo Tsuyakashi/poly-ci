@@ -88,26 +88,37 @@ sudo docker run -d \
 
 # Jenkins
 echo "Installing Jenkins"
-curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key \
-  | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
-  https://pkg.jenkins.io/debian-stable binary/" \
-  | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
-sudo apt-get update -qq
-sudo apt-get install -y openjdk-17-jdk jenkins
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-17-jdk &>/dev/null
 
+sudo useradd -m -d /var/lib/jenkins -s /bin/bash jenkins 2>/dev/null || true
 sudo usermod -aG docker jenkins
+
+sudo wget -qO /opt/jenkins.war https://get.jenkins.io/war-stable/latest/jenkins.war
+
+sudo tee /etc/systemd/system/jenkins.service > /dev/null <<EOF
+[Unit]
+Description=Jenkins
+After=network.target
+
+[Service]
+User=jenkins
+ExecStart=/usr/bin/java -jar /opt/jenkins.war --httpPort=8080
+Environment="JENKINS_HOME=/var/lib/jenkins"
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
 sudo systemctl enable --now jenkins
 
-# Ждём пока Jenkins поднимется
 echo "Waiting for Jenkins to start..."
 until curl -sf http://localhost:8080/login > /dev/null; do sleep 3; done
 
-# Отключаем wizard setup
 sudo bash -c 'echo 2 > /var/lib/jenkins/jenkins.install.UpgradeWizard.state'
 sudo mkdir -p /var/lib/jenkins/init.groovy.d
 
-# Устанавливаем пароль админа
 sudo tee /var/lib/jenkins/init.groovy.d/01-admin.groovy > /dev/null <<GROOVY
 import jenkins.model.*
 import hudson.security.*
@@ -123,7 +134,6 @@ instance.setAuthorizationStrategy(strategy)
 instance.save()
 GROOVY
 
-# Создаём credentials
 sudo tee /var/lib/jenkins/init.groovy.d/02-credentials.groovy > /dev/null <<GROOVY
 import jenkins.model.*
 import com.cloudbees.plugins.credentials.*
@@ -163,12 +173,11 @@ GROOVY
 
 sudo chown -R jenkins:jenkins /var/lib/jenkins/init.groovy.d/
 
-# Устанавливаем плагины через CLI
 sudo systemctl restart jenkins
 until curl -sf http://localhost:8080/login > /dev/null; do sleep 3; done
 
 sudo curl -fsSL http://localhost:8080/jnlpJars/jenkins-cli.jar -o /tmp/jenkins-cli.jar
-sleep 10  # ждём полной инициализации после restart
+sleep 10
 
 java -jar /tmp/jenkins-cli.jar \
     -s http://localhost:8080 \
