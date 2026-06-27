@@ -1,5 +1,5 @@
 #!/bin/bash
-(set -o posix; [ -f /usr/bin/dos2unix ] || (sudo apt-get update && sudo apt-get install -y dos2unix)) && dos2unix "$0"
+(set -o posix; [ -f /usr/bin/dos2unix ] || (sudo apt-get update &>/dev/null && sudo apt-get install -y dos2unix &>/dev/null)) && dos2unix "$0"
 
 # Install Docker
 echo "Installing docker"
@@ -88,7 +88,7 @@ sudo docker run -d \
 
 # Jenkins
 echo "Installing Jenkins"
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-17-jdk &>/dev/null
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-21-jdk &>/dev/null
 
 sudo useradd -m -d /var/lib/jenkins -s /bin/bash jenkins 2>/dev/null || true
 sudo usermod -aG docker jenkins
@@ -102,7 +102,9 @@ After=network.target
 
 [Service]
 User=jenkins
-ExecStart=/usr/bin/java -jar /opt/jenkins.war --httpPort=8080
+ExecStart=/usr/bin/java \
+  -Dhudson.security.csrf.GlobalCrumbIssuerConfiguration.DISABLE_CSRF_PROTECTION=true \
+  -jar /opt/jenkins.war --httpPort=8080
 Environment="JENKINS_HOME=/var/lib/jenkins"
 Restart=always
 
@@ -111,13 +113,9 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now jenkins
 
-echo "Waiting for Jenkins to start..."
-until curl -sf http://localhost:8080/login > /dev/null; do sleep 3; done
-
-sudo bash -c 'echo 2 > /var/lib/jenkins/jenkins.install.UpgradeWizard.state'
 sudo mkdir -p /var/lib/jenkins/init.groovy.d
+sudo bash -c 'echo 2 > /var/lib/jenkins/jenkins.install.UpgradeWizard.state'
 
 sudo tee /var/lib/jenkins/init.groovy.d/01-admin.groovy > /dev/null <<GROOVY
 import jenkins.model.*
@@ -134,57 +132,89 @@ instance.setAuthorizationStrategy(strategy)
 instance.save()
 GROOVY
 
-sudo tee /var/lib/jenkins/init.groovy.d/02-credentials.groovy > /dev/null <<GROOVY
+sudo mkdir -p /var/lib/jenkins
+sudo tee /var/lib/jenkins/jenkins.model.JenkinsLocationConfiguration.xml > /dev/null <<XML
+<?xml version='1.1' encoding='UTF-8'?>
+<jenkins.model.JenkinsLocationConfiguration>
+  <adminAddress>address not configured yet &lt;nobody@nowhere&gt;</adminAddress>
+  <jenkinsUrl>http://192.168.56.10:8080/</jenkinsUrl>
+</jenkins.model.JenkinsLocationConfiguration>
+XML
+
+sudo chown -R jenkins:jenkins /var/lib/jenkins/
+
+sudo systemctl enable --now jenkins
+
+echo "Waiting for Jenkins to start..."
+until curl -sf http://localhost:8080/login > /dev/null; do sleep 3; done
+sleep 30
+
+# Хелпер: выполнить Groovy через Script Console
+run_groovy() {
+    curl -sf \
+        -u "admin:${JENKINS_ADMIN_PASSWORD}" \
+        "http://localhost:8080/scriptText" \
+        --data-urlencode "script=$1"
+}
+
+# Установка плагинов через Script Console
+echo "Installing plugins..."
+run_groovy '
 import jenkins.model.*
+def pm = Jenkins.getInstance().getPluginManager()
+def uc = Jenkins.getInstance().getUpdateCenter()
+uc.updateAllSites()
+["workflow-aggregator","git","credentials-binding","docker-workflow","github"].each { name ->
+    if (!pm.getPlugin(name)) {
+        def plugin = uc.getPlugin(name)
+        if (plugin) plugin.deploy(true)
+    }
+}
+'
+
+echo "Waiting for plugins to install..."
+sleep 60
+
+run_groovy 'Jenkins.getInstance().safeRestart()'
+
+echo "Waiting for Jenkins to restart after plugin install..."
+sleep 20
+until curl -sf http://localhost:8080/login > /dev/null; do sleep 3; done
+sleep 15
+
+# Credentials + Job через Script Console
+run_groovy "
 import com.cloudbees.plugins.credentials.*
 import com.cloudbees.plugins.credentials.domains.*
-import com.cloudbees.plugins.credentials.impl.*
+import org.jenkinsci.plugins.plaincredentials.impl.*
 import hudson.util.Secret
-
-def store = Jenkins.getInstance()
-    .getExtensionList("com.cloudbees.plugins.credentials.SystemCredentialsProvider")[0]
-    .getStore()
-
-store.addCredentials(Domain.global(), new StringCredentialsImpl(
-    CredentialsScope.GLOBAL, "watchtower-token", "Watchtower Token",
-    Secret.fromString("${WATCHTOWER_TOKEN}")
-))
-GROOVY
-
-sudo tee /var/lib/jenkins/init.groovy.d/03-job.groovy > /dev/null <<GROOVY
 import jenkins.model.*
 import org.jenkinsci.plugins.workflow.job.*
 import org.jenkinsci.plugins.workflow.cps.*
 import hudson.plugins.git.*
 
 def jenkins = Jenkins.getInstance()
-def jobName = "poly-ci"
+def store = jenkins
+    .getExtensionList('com.cloudbees.plugins.credentials.SystemCredentialsProvider')[0]
+    .getStore()
 
+if (!store.getCredentials(Domain.global()).find { it.id == 'watchtower-token' }) {
+    store.addCredentials(Domain.global(), new StringCredentialsImpl(
+        CredentialsScope.GLOBAL, 'watchtower-token', 'Watchtower Token',
+        Secret.fromString('${WATCHTOWER_TOKEN}')
+    ))
+}
+
+def jobName = 'poly-ci'
 if (jenkins.getItem(jobName) == null) {
     def job = jenkins.createProject(WorkflowJob.class, jobName)
     job.setDefinition(new CpsScmFlowDefinition(
-        new GitSCM("https://github.com/${GITHUB_REPO}.git"),
-        "Jenkinsfile"
+        new GitSCM('https://github.com/${GITHUB_REPO}.git'),
+        'Jenkinsfile'
     ))
     job.save()
 }
 jenkins.save()
-GROOVY
-
-sudo chown -R jenkins:jenkins /var/lib/jenkins/init.groovy.d/
-
-sudo systemctl restart jenkins
-until curl -sf http://localhost:8080/login > /dev/null; do sleep 3; done
-
-sudo curl -fsSL http://localhost:8080/jnlpJars/jenkins-cli.jar -o /tmp/jenkins-cli.jar
-sleep 10
-
-java -jar /tmp/jenkins-cli.jar \
-    -s http://localhost:8080 \
-    -auth "admin:${JENKINS_ADMIN_PASSWORD}" \
-    install-plugin \
-        workflow-aggregator git credentials-binding \
-        docker-workflow github \
-    -restart
+"
 
 echo "All done"
