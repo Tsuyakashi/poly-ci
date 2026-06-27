@@ -149,12 +149,18 @@ echo "Waiting for Jenkins to start..."
 until curl -sf http://localhost:8080/login > /dev/null; do sleep 3; done
 sleep 30
 
-# Хелпер: выполнить Groovy через Script Console
+# Хелпер: выполнить Groovy через Script Console (через файл — без проблем с экранированием)
 run_groovy() {
+    local script_file
+    script_file=$(mktemp /tmp/jenkins-groovy-XXXXXX.groovy)
+    cat > "$script_file" <<'SCRIPT_EOF'
+SCRIPT_EOF
+    printf '%s' "$1" > "$script_file"
     curl -sf \
         -u "admin:${JENKINS_ADMIN_PASSWORD}" \
         "http://localhost:8080/scriptText" \
-        --data-urlencode "script=$1"
+        --data-urlencode "script@${script_file}"
+    rm -f "$script_file"
 }
 
 # Установка плагинов через Script Console
@@ -183,7 +189,7 @@ until curl -sf http://localhost:8080/login > /dev/null; do sleep 3; done
 sleep 15
 
 # Credentials + Job через Script Console
-run_groovy "
+GROOVY_SCRIPT=$(cat <<GROOVY
 import com.cloudbees.plugins.credentials.*
 import com.cloudbees.plugins.credentials.domains.*
 import org.jenkinsci.plugins.plaincredentials.impl.*
@@ -215,6 +221,15 @@ if (jenkins.getItem(jobName) == null) {
     job.save()
 }
 jenkins.save()
-"
+GROOVY
+)
+
+GROOVY_FILE=$(mktemp /tmp/jenkins-groovy-XXXXXX.groovy)
+printf '%s' "$GROOVY_SCRIPT" > "$GROOVY_FILE"
+curl -sf \
+    -u "admin:${JENKINS_ADMIN_PASSWORD}" \
+    "http://localhost:8080/scriptText" \
+    --data-urlencode "script@${GROOVY_FILE}"
+rm -f "$GROOVY_FILE"
 
 echo "All done"
