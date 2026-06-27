@@ -1,9 +1,3 @@
-networks:
-  web-network:
-    driver: bridge
-  logging-network:
-    driver: bridge
-    
 services:
   nginx:
     image: nginx:alpine
@@ -73,15 +67,18 @@ services:
     user: root
     command: ["filebeat", "-e", "--strict.perms=false"]
     volumes:
-      - ./monitoring/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./configs/filebeat/config.yml:/usr/share/filebeat/filebeat.yml:ro
     networks:
       - logging-network
     restart: unless-stopped
-    depends_on:
-      - logstash
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:5066/ | grep -q '\"beat\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
-volumes:
-  es-data:
-    driver: local
+networks:
+  web-network:
+    driver: bridge
+  logging-network:
+    driver: bridge

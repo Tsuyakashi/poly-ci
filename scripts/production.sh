@@ -25,7 +25,7 @@ echo "Waiting for Kibana..."
 kibana_timeout=0
 until curl -sf http://localhost/kibana/api/status | grep -q '"level":"available"'; do
   sleep 5
-  if [ "$kibana_timeout" -lt 12; ]; then
+  if [ "$kibana_timeout" -lt 12 ]; then
     ((kibana_timeout += 1))
   else
     echo "Kibana didn't start in time"
