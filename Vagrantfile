@@ -60,10 +60,7 @@ Vagrant.configure("2") do |config|
                         "BB_OAUTH_CLIENT_SECRET" => ENV['BB_OAUTH_CLIENT_SECRET'],
 
                         "JENKINS_ADMIN_PASSWORD" => ENV['JENKINS_ADMIN_PASSWORD'],
-                        "REGISTRY_USER"          => ENV['REGISTRY_USER'],
-                        "REGISTRY_PASSWORD"      => ENV['REGISTRY_PASSWORD'],
                         "WATCHTOWER_TOKEN"       => ENV['WATCHTOWER_TOKEN'],
-                        "GITHUB_REPO"            => ENV['GITHUB_REPO'],
                     }
                     
                 end

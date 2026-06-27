@@ -77,6 +77,15 @@ sudo docker container run -it -d \
     --name bitbukcet-runner \
     docker-public.packages.atlassian.com/sox/atlassian/bitbucket-pipelines-runner
 
+# Self-hosted Docker Registry
+echo "Starting self-hosted Docker Registry"
+sudo docker run -d \
+    --name registry \
+    --restart always \
+    -p 5000:5000 \
+    -v /var/lib/registry:/var/lib/registry \
+    registry:2
+
 # Jenkins
 echo "Installing Jenkins"
 curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key \
@@ -125,26 +134,18 @@ import hudson.util.Secret
 def store = Jenkins.getInstance()
     .getExtensionList("com.cloudbees.plugins.credentials.SystemCredentialsProvider")[0]
     .getStore()
-def domain = Domain.global()
 
-store.addCredentials(domain, new UsernamePasswordCredentialsImpl(
-    CredentialsScope.GLOBAL, "gitlab-registry", "GitLab Registry",
-    "${REGISTRY_USER}", "${REGISTRY_PASSWORD}"
-))
-
-store.addCredentials(domain, new StringCredentialsImpl(
+store.addCredentials(Domain.global(), new StringCredentialsImpl(
     CredentialsScope.GLOBAL, "watchtower-token", "Watchtower Token",
     Secret.fromString("${WATCHTOWER_TOKEN}")
 ))
 GROOVY
 
-# Создаём pipeline job
 sudo tee /var/lib/jenkins/init.groovy.d/03-job.groovy > /dev/null <<GROOVY
 import jenkins.model.*
 import org.jenkinsci.plugins.workflow.job.*
 import org.jenkinsci.plugins.workflow.cps.*
 import hudson.plugins.git.*
-import com.cloudbees.plugins.credentials.*
 
 def jenkins = Jenkins.getInstance()
 def jobName = "poly-ci"
