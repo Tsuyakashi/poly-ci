@@ -10,7 +10,7 @@ end
 ENV['VAGRANT_SERVER_URL'] = 'https://vagrant.elab.pro'
 
 NODES = {
-    "runner-node"     => { hostname: "runner",     ip: "192.168.56.10", memory: 1024, cpus: 1 },
+    "runner-node"     => { hostname: "runner",     ip: "192.168.56.10", memory: 2048, cpus: 2 },
     "production-node" => { hostname: "production", ip: "192.168.56.11", memory: 1024, cpus: 1 },
     "monitoring-node" => { hostname: "monitoring", ip: "192.168.56.12", memory: 2048, cpus: 2 },
 }
@@ -48,7 +48,18 @@ Vagrant.configure("2") do |config|
                 node.vm.provision "configure_runner", type: "shell" do |s|
                     s.path   = "scripts/runner.sh"
                     s.binary = true
-                    s.env    = { "REGISTRATION_TOKEN" => ENV['GITLAB_TOKEN'] }
+                    s.env    = { 
+                        "REGISTRATION_TOKEN" => ENV['GITLAB_TOKEN'],
+                        
+                        "GITHUB_RUNNER_TOKEN" => ENV['GITHUB_RUNNER_TOKEN'],
+                        "GITHUB_REPO"         => ENV['GITHUB_REPO'],  
+                        
+                        "BB_ACCOUNT_UUID"      => ENV['BB_ACCOUNT_UUID'],
+                        "BB_RUNNER_UUID"       => ENV['BB_RUNNER_UUID'],
+                        "BB_OAUTH_CLIENT_ID"   => ENV['BB_OAUTH_CLIENT_ID'],
+                        "BB_OAUTH_CLIENT_SECRET" => ENV['BB_OAUTH_CLIENT_SECRET']
+                    }
+                    
                 end
             end
 

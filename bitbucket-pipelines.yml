@@ -9,6 +9,9 @@ pipelines:
       - parallel:
           - step:
               name: Build Python
+              runs-on:
+                - self.hosted
+                - linux
               services: [docker]
               condition:
                 changesets:
@@ -22,6 +25,9 @@ pipelines:
 
           - step:
               name: Build Go
+              runs-on:
+                - self.hosted
+                - linux
               services: [docker]
               condition:
                 changesets:
@@ -35,6 +41,9 @@ pipelines:
 
           - step:
               name: Build Node.js
+              runs-on:
+                - self.hosted
+                - linux
               services: [docker]
               condition:
                 changesets:
@@ -50,6 +59,9 @@ pipelines:
       - parallel:
           - step:
               name: Deploy Python
+              runs-on:
+                - self.hosted
+                - linux
               image: curlimages/curl:latest
               condition:
                 changesets:
@@ -63,6 +75,9 @@ pipelines:
 
           - step:
               name: Deploy Go
+              runs-on:
+                - self.hosted
+                - linux
               image: curlimages/curl:latest
               condition:
                 changesets:
@@ -76,6 +91,9 @@ pipelines:
 
           - step:
               name: Deploy Node.js
+              runs-on:
+                - self.hosted
+                - linux
               image: curlimages/curl:latest
               condition:
                 changesets:
