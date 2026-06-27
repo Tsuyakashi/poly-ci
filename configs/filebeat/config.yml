@@ -2,16 +2,18 @@ http.enabled: true
 http.port: 5066
 
 filebeat.inputs:
-  - type: log
+  - type: container
     enabled: true
-    # Я запущу filebeat в докере и проброшу логи приложения по данному пути
     paths:
-      - /host_metrics_app/host_metrics_app.log
+      - /var/lib/docker/containers/*/*.log
     # В fields мы можем указать дополнительные поля, а затем в logstash вытаскивать их 
     # и делать какую-нибудь дополнительную работу с логами
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
     fields:
       # Название нашего сервиса
-      service: host_metrics_app
+      service: nginx
 
 output.logstash:
   # Будьте внимательны при запуске вне докера и вместо logstash укажите правильный адрес хоста с logstash. 
