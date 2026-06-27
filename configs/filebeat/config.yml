@@ -1,0 +1,25 @@
+http.enabled: true
+http.port: 5066
+
+filebeat.inputs:
+  - type: container
+    enabled: true
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    # В fields мы можем указать дополнительные поля, а затем в logstash вытаскивать их 
+    # и делать какую-нибудь дополнительную работу с логами
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      # - drop_event:
+      #   when:
+      #     not:
+      #       equals:
+      #         container.name: "nginx-proxy"
+    fields:
+      # Название нашего сервиса
+      service: nginx
+
+output.logstash:
+  # Будьте внимательны при запуске вне докера и вместо logstash укажите правильный адрес хоста с logstash. 
+  hosts: ["192.168.56.12:5044"]
