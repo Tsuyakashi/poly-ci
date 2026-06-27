@@ -79,15 +79,26 @@ Vagrant.configure("2") do |config|
             if name == "monitoring-node"
                 node.vm.provision "make_app_dir", type: "shell" do |s|
                     s.inline = <<~SHELL
-                    sudo mkdir -p /app/monitoring  \
+                    sudo mkdir -p /app/configs/elasticsearch /app/configs/kibana /app/configs/logstash/piplines  \
                         && sudo chown -R vagrant:vagrant /app
                     SHELL
                 end
                 
-                node.vm.provision "file", source: "monitoring/filebeat.yml",           destination: "/app/monitoring/filebeat.yml"
-                node.vm.provision "file", source: "monitoring/logstash.conf",          destination: "/app/monitoring/logstash.conf"
-                node.vm.provision "file", source: "monitoring/logstash-template.json", destination: "/app/monitoring/logstash-template.json"
+                node.vm.provision "file", source: "docker-compose.monitoring.yml",                             destination: "/app/docker-compose-monitoring.yml"
+                node.vm.provision "file", source: "configs/elasticsearch/congig.yml",                          destination: "/app/configs/elasticsearch/config.yml"
+                node.vm.provision "file", source: "configs/logstash/config.conf",                              destination: "/app/configs/logstash/config.conf"
+                node.vm.provision "file", source: "configs/logstash/pipelines.yml",                            destination: "/app/configs/logstash/piplines.yml"
+                node.vm.provision "file", source: "configs/logstash/pipelines/service_stamped_json_logs.conf", destination: "/app/configs/logstash/pipelines/service_stamped_json_logs.conf"
             
+
+                node.vm.provision "configure_production", type: "shell" do |s|
+                    s.path   = "scripts/monitoring.sh"
+                    s.binary = true
+                    s.env    = {
+                        "ELASTIC_PASSWORD"        => ENV['ELASTIC_PASSWORD'],
+                        "KIBANA_SYSTEM_PASSWORD"  => ENV['KIBANA_SYSTEM_PASSWORD'],
+                    }
+                end
             end
         end
     end
