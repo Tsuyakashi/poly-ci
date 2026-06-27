@@ -91,6 +91,7 @@ Vagrant.configure("2") do |config|
                 node.vm.provision "file", source: "configs/logstash/pipelines.yml",                            destination: "/app/configs/logstash/pipelines.yml"
                 node.vm.provision "file", source: "configs/logstash/pipelines/service_stamped_json_logs.conf", destination: "/app/configs/logstash/pipelines/service_stamped_json_logs.conf"
                 node.vm.provision "file", source: "configs/kibana/config.yml",                                 destination: "/app/configs/kibana/config.yml"
+                node.vm.provision "file", source: "configs/kibana/dashboards.ndjson",                          destination: "/app/configs/kibana/dashboards.ndjson"
 
                 node.vm.provision "configure_monitoring", type: "shell" do |s|
                     s.path   = "scripts/monitoring.sh"
