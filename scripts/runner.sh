@@ -63,17 +63,18 @@ sudo /home/vagrant/actions-runner/svc.sh start
 
 # Bitbucket runner работает как Docker контейнер
 echo "Installing and starting bitbucket runner"
-docker run -it -d \
+sudo docker container run -it -d \
     -v /tmp:/tmp \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v /var/lib/docker/containers:/var/lib/docker/containers:ro \
-    --name bitbucket-runner \
-    --restart unless-stopped \
-    -e ACCOUNT_UUID="$BB_ACCOUNT_UUID" \
-    -e RUNNER_UUID="$BB_RUNNER_UUID" \
-    -e OAUTH_CLIENT_ID="$BB_OAUTH_CLIENT_ID" \
-    -e OAUTH_CLIENT_SECRET="$BB_OAUTH_CLIENT_SECRET" \
+    -e ACCOUNT_UUID=$BB_ACCOUNT_UUID \
+    -e REPOSITORY_UUID=$BB_REPOSITORY_UUID \
+    -e RUNNER_UUID=$BB_RUNNER_UUID \
+    -e RUNTIME_PREREQUISITES_ENABLED=true \
+    -e OAUTH_CLIENT_ID=$BB_OAUTH_CLIENT_ID \
+    -e OAUTH_CLIENT_SECRET=$BB_OAUTH_CLIENT_SECRET \
     -e WORKING_DIRECTORY=/tmp \
-    docker-public.packages.atlassian.com/sox/atlassian/bitbucket-pipelines-runner:1
-    
+    --name bitbukcet-runner \
+    docker-public.packages.atlassian.com/sox/atlassian/bitbucket-pipelines-runner
+
 echo "All done"
