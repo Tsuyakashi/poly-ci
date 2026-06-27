@@ -43,14 +43,13 @@ sudo gitlab-runner register \
 # GitHub runner
 echo "Installing and starting github actions runner"
 RUNNER_VERSION="2.317.0"
-mkdir -p /home/vagrant/actions-runner && cd /home/vagrant/actions-runner
-
+mkdir -p /home/vagrant/actions-runner
 curl -sL "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz" \
-    | tar xz
+    | tar xz -C /home/vagrant/actions-runner
 
 sudo chown -R vagrant:vagrant /home/vagrant/actions-runner
 
-sudo -u vagrant ./config.sh \
+sudo -u vagrant /home/vagrant/actions-runner/config.sh \
     --url "https://github.com/$GITHUB_REPO" \
     --token "$GITHUB_RUNNER_TOKEN" \
     --name "vagrant-linux" \
@@ -58,8 +57,8 @@ sudo -u vagrant ./config.sh \
     --unattended \
     --replace
 
-sudo ./svc.sh install vagrant
-sudo ./svc.sh start
+sudo /home/vagrant/actions-runner/svc.sh install vagrant
+sudo /home/vagrant/actions-runner/svc.sh start
 
 
 # Bitbucket runner работает как Docker контейнер
@@ -67,6 +66,7 @@ echo "Installing and starting bitbucket runner"
 docker run -it -d \
     -v /tmp:/tmp \
     -v /var/run/docker.sock:/var/run/docker.sock \
+    -v /var/lib/docker/containers:/var/lib/docker/containers:ro \
     --name bitbucket-runner \
     --restart unless-stopped \
     -e ACCOUNT_UUID="$BB_ACCOUNT_UUID" \
