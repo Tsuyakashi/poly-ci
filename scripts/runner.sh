@@ -79,7 +79,9 @@ fi
 
 # Bitbucket runner работает как Docker контейнер
 echo "Installing and starting bitbucket runner"
-sudo docker container run -it -d \
+
+# Если продолжит падать по OOM увеличить в Vagrantfile
+sudo docker container run -d \
     -v /tmp:/tmp \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v /var/lib/docker/containers:/var/lib/docker/containers:ro \
@@ -90,6 +92,8 @@ sudo docker container run -it -d \
     -e OAUTH_CLIENT_ID=$BB_OAUTH_CLIENT_ID \
     -e OAUTH_CLIENT_SECRET=$BB_OAUTH_CLIENT_SECRET \
     -e WORKING_DIRECTORY=/tmp \
+    -e JAVA_OPTS="-Xmx256m -Xms128m" \
+    --memory=512m \
     --name bitbucket-runner \
     docker-public.packages.atlassian.com/sox/atlassian/bitbucket-pipelines-runner
 
