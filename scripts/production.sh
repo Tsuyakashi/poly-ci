@@ -11,6 +11,13 @@ fi
 echo "Auth system docker with private gitlab repo"
 echo "$REGISTRY_PASSWORD" | sudo docker login registry.gitlab.com -u "$REGISTRY_USER" --password-stdin
 
+# sudo tee /etc/docker/daemon.json > /dev/null <<EOF
+# {
+#     "insecure-registries": ["192.168.56.10:5000"]
+# }
+# EOF
+# sudo systemctl restart docker
+
 cd /app
 
 export BASE_REGISTRY REGISTRY_USER REGISTRY_PASSWORD WATCHTOWER_TOKEN

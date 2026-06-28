@@ -49,15 +49,18 @@ Vagrant.configure("2") do |config|
                     s.path   = "scripts/runner.sh"
                     s.binary = true
                     s.env    = { 
-                        "REGISTRATION_TOKEN" => ENV['GITLAB_TOKEN'],
+                        "REGISTRATION_TOKEN"     => ENV['GITLAB_TOKEN'],
                         
-                        "GITHUB_RUNNER_TOKEN" => ENV['GITHUB_RUNNER_TOKEN'],
-                        "GITHUB_REPO"         => ENV['GITHUB_REPO'],  
+                        "GITHUB_RUNNER_TOKEN"    => ENV['GITHUB_RUNNER_TOKEN'],
+                        "GITHUB_REPO"            => ENV['GITHUB_REPO'],  
                         
-                        "BB_ACCOUNT_UUID"      => ENV['BB_ACCOUNT_UUID'],
-                        "BB_RUNNER_UUID"       => ENV['BB_RUNNER_UUID'],
-                        "BB_OAUTH_CLIENT_ID"   => ENV['BB_OAUTH_CLIENT_ID'],
-                        "BB_OAUTH_CLIENT_SECRET" => ENV['BB_OAUTH_CLIENT_SECRET']
+                        "BB_ACCOUNT_UUID"        => ENV['BB_ACCOUNT_UUID'],
+                        "BB_RUNNER_UUID"         => ENV['BB_RUNNER_UUID'],
+                        "BB_OAUTH_CLIENT_ID"     => ENV['BB_OAUTH_CLIENT_ID'],
+                        "BB_OAUTH_CLIENT_SECRET" => ENV['BB_OAUTH_CLIENT_SECRET'],
+
+                        "JENKINS_ADMIN_PASSWORD" => ENV['JENKINS_ADMIN_PASSWORD'],
+                        "WATCHTOWER_TOKEN"       => ENV['WATCHTOWER_TOKEN'],
                     }
                     
                 end
