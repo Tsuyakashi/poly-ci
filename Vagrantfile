@@ -51,10 +51,11 @@ Vagrant.configure("2") do |config|
                     s.env    = { 
                         "REGISTRATION_TOKEN"     => ENV['GITLAB_TOKEN'],
                         
-                        "GITHUB_RUNNER_TOKEN"    => ENV['GITHUB_RUNNER_TOKEN'],
+                        "GITHUB_PAT"             => ENV['GITHUB_PAT'],
                         "GITHUB_REPO"            => ENV['GITHUB_REPO'],  
                         
                         "BB_ACCOUNT_UUID"        => ENV['BB_ACCOUNT_UUID'],
+                        "BB_REPOSITORY_UUID"     => ENV['BB_REPOSITORY_UUID'],
                         "BB_RUNNER_UUID"         => ENV['BB_RUNNER_UUID'],
                         "BB_OAUTH_CLIENT_ID"     => ENV['BB_OAUTH_CLIENT_ID'],
                         "BB_OAUTH_CLIENT_SECRET" => ENV['BB_OAUTH_CLIENT_SECRET'],
