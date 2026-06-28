@@ -74,7 +74,7 @@ sudo docker container run -it -d \
     -e OAUTH_CLIENT_ID=$BB_OAUTH_CLIENT_ID \
     -e OAUTH_CLIENT_SECRET=$BB_OAUTH_CLIENT_SECRET \
     -e WORKING_DIRECTORY=/tmp \
-    --name bitbukcet-runner \
+    --name bitbucket-runner \
     docker-public.packages.atlassian.com/sox/atlassian/bitbucket-pipelines-runner
 
 # Self-hosted Docker Registry
