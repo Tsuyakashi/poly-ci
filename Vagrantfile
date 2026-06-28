@@ -51,7 +51,7 @@ Vagrant.configure("2") do |config|
                     s.env    = { 
                         "REGISTRATION_TOKEN"     => ENV['GITLAB_TOKEN'],
                         
-                        "GITHUB_RUNNER_TOKEN"    => ENV['GITHUB_RUNNER_TOKEN'],
+                        "GITHUB_PAT"             => ENV['GITHUB_PAT'],
                         "GITHUB_REPO"            => ENV['GITHUB_REPO'],  
                         
                         "BB_ACCOUNT_UUID"        => ENV['BB_ACCOUNT_UUID'],

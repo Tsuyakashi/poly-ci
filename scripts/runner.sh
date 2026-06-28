@@ -42,25 +42,40 @@ sudo gitlab-runner register \
 
 # GitHub runner
 echo "Installing and starting github actions runner"
+
+if [ -n "$GITHUB_PAT" ]; then
+    API_RESPONSE=$(curl -s -X POST \
+        -H "Authorization: token $GITHUB_PAT" \
+        -H "Accept: application/vnd.github.v3+json" \
+        "https://api.github.com/repos/$GITHUB_REPO/actions/runners/registration-token")
+    GITHUB_RUNNER_TOKEN=$(echo "$API_RESPONSE" \
+        | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])" 2>/dev/null)
+fi
+
 RUNNER_VERSION=$(curl -s https://api.github.com/repos/actions/runner/releases/latest \
     | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
 mkdir -p /home/vagrant/actions-runner
 curl -sL "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz" \
     | tar xz -C /home/vagrant/actions-runner
-
 sudo chown -R vagrant:vagrant /home/vagrant/actions-runner
 
-sudo -u vagrant /home/vagrant/actions-runner/config.sh \
-    --url "https://github.com/$GITHUB_REPO" \
-    --token "$GITHUB_RUNNER_TOKEN" \
-    --name "vagrant-linux" \
-    --labels "linux,self-hosted" \
-    --unattended \
-    --replace
-
-sudo /home/vagrant/actions-runner/svc.sh install vagrant
-sudo /home/vagrant/actions-runner/svc.sh start
-
+if [ -n "$GITHUB_RUNNER_TOKEN" ]; then
+    if sudo -u vagrant /home/vagrant/actions-runner/config.sh \
+        --url "https://github.com/$GITHUB_REPO" \
+        --token "$GITHUB_RUNNER_TOKEN" \
+        --name "vagrant-linux" \
+        --labels "linux,self-hosted" \
+        --unattended \
+        --replace; then
+        sudo bash -c 'cd /home/vagrant/actions-runner && ./svc.sh install vagrant'
+        sudo bash -c 'cd /home/vagrant/actions-runner && ./svc.sh start'
+        echo "GitHub Actions runner started"
+    else
+        echo "WARNING: config.sh failed" >&2
+    fi
+else
+    echo "WARNING: failed to obtain GitHub runner token" >&2
+fi
 
 # Bitbucket runner работает как Docker контейнер
 echo "Installing and starting bitbucket runner"
