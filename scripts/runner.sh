@@ -82,6 +82,7 @@ echo "Installing and starting bitbucket runner"
 
 # Если продолжит падать по OOM увеличить в Vagrantfile
 sudo docker container run -d \
+    --restart always \
     -v /tmp:/tmp \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v /var/lib/docker/containers:/var/lib/docker/containers:ro \
