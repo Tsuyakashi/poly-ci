@@ -42,7 +42,8 @@ sudo gitlab-runner register \
 
 # GitHub runner
 echo "Installing and starting github actions runner"
-RUNNER_VERSION="2.317.0"
+RUNNER_VERSION=$(curl -s https://api.github.com/repos/actions/runner/releases/latest \
+    | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
 mkdir -p /home/vagrant/actions-runner
 curl -sL "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz" \
     | tar xz -C /home/vagrant/actions-runner
