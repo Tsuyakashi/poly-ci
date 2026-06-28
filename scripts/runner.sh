@@ -86,6 +86,13 @@ sudo docker run -d \
     -v /var/lib/registry:/var/lib/registry \
     registry:2
 
+sudo tee /etc/docker/daemon.json > /dev/null <<EOF
+{
+  "insecure-registries": ["192.168.56.10:5000"]
+}
+EOF
+sudo systemctl restart docker
+
 # Jenkins
 echo "Installing Jenkins"
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-21-jdk &>/dev/null
